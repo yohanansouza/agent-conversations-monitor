@@ -7,7 +7,7 @@
     const byId = new Map(sessions.map(s => [s.id, s]));
     const parent = new Map(), children = new Map();
     for (const s of sessions) for (const child of s.children || []) {
-      if (child.id !== s.id && !parent.has(child.id)) parent.set(child.id, {id:s.id, role:child.role});
+      if (child.id !== s.id && !parent.has(child.id)) parent.set(child.id, {id:s.id, role:child.role, relation:child.relation});
     }
     for (const s of sessions) if (s.parent && s.parent !== s.id && !parent.has(s.id)) parent.set(s.id, {id:s.parent, role:s.role});
     for (const [id, link] of parent) if (byId.has(id) && byId.has(link.id)) {
@@ -34,7 +34,7 @@
       visited.add(s.id);
       const visible = allowed(s) && (textMatch(s) || kind === 'all');
       const descendants = (children.get(s.id) || []).filter(c => subtreeMatches(c, new Set([s.id])));
-      if (visible) out.push({session:s, depth, role:parent.get(s.id)?.role, agent:parent.has(s.id), parentId:parent.get(s.id)?.id, hasChildren:descendants.length > 0, expanded:!!query || expanded.has(s.id)});
+      if (visible) out.push({session:s, depth, role:parent.get(s.id)?.role, relation:parent.get(s.id)?.relation, agent:parent.has(s.id), parentId:parent.get(s.id)?.id, hasChildren:descendants.length > 0, expanded:!!query || expanded.has(s.id)});
       if (!visible || query || expanded.has(s.id)) for (const c of descendants) walk(c, depth + (visible ? 1 : 0));
     }
     const reachable = new Set();

@@ -82,6 +82,7 @@ function render() {
     const category = entry.agent ? 'Agente' : 'Chat';
     meta.append(badge(s.source), document.createTextNode(` · ${category} · ${new Date(s.modified).toLocaleString('pt-BR')} · ${monitorFormat.compactTokens(s.usage?.total)}`));
     button.append(el('span', entry.role || title(s)), meta);
+    if (entry.relation) button.append(el('small', entry.relation, 'session-models'));
     if (entry.agent && !map.has(entry.parentId)) button.append(el('small', 'Vínculo principal indisponível', 'session-models'));
     if (entry.agent && kind.value === 'agents' && map.has(entry.parentId)) button.append(el('small', `Vinculado a: ${title(map.get(entry.parentId))}`, 'session-models'));
     if (s.models?.length) button.append(el('small', monitorFormat.modelLabels(s.models).join(' | '), 'session-models'));

@@ -21,6 +21,7 @@ Alternatively, run `code --install-extension path/to/file.vsix`. Updates from Gi
 
 - Use the four independent **Filtros**, **Conversas encontradas**, **Chat**, and **Conversas (modo nativo)** views. The VS Code **...** menu shows or hides each view, and the view dividers resize them. Filters and conversation selection are synchronized between views.
 - Filter the conversation list to show all records, chats only, or agents only. Expand chats and agents to browse recorded child relationships; search reveals matching descendants and their ancestors. Agents whose parent record is unavailable are identified without inventing a connection. The type filter applies to the conversation list; the native view remains independent.
+- Antigravity sessions can appear under the Codex chat that started them when an explicit `agy` invocation returns a conversation ID matching local records. Ambiguous invocations, resumed conversations, missing logs, and unrecognized formats remain independent; not every invocation can be identified.
 - Filter sessions by provider, browse agent and subagent relationships, and read messages with Markdown formatting.
 - New conversations produce clickable notices in the panel and status bar. New messages within an existing session do not trigger notices.
 - Where records contain usage data, show per-agent input, output, cache and total tokens. These are recorded values, not a bill or guaranteed account-wide total; cache and reasoning conventions differ by provider. Agent totals may overlap.
@@ -45,7 +46,7 @@ Polling continues while VS Code is open, including when the panel is hidden. Exi
 
 The extension reads configured local files and does not transmit conversation content to external services. Those records can contain sensitive information visible to anyone with access to your computer and the panel. HTTP/HTTPS links are clickable and open their destination; HTML is rendered as text, and remote images are not loaded.
 
-Providers use internal formats that may change. Records can be delayed, missing, protected, or inherited from earlier contexts. Cloud, archived, and other application sessions may not appear. Only the latest 2,000 Codex events per session are displayed. Usage fields can be missing, incomplete, or differ between providers; unavailable values are not estimated. The monitor cannot reliably determine whether an Antigravity call was initiated by Codex or whether an agent is active.
+Providers use internal formats that may change. Records can be delayed, missing, protected, or inherited from earlier contexts. Cloud, archived, and other application sessions may not appear. Only the latest 2,000 Codex events per session are displayed. Usage fields can be missing, incomplete, or differ between providers; unavailable values are not estimated. The monitor cannot reliably determine whether an agent is active.
 
 Claude Code has been checked against locally available session files. Grok Build support is based on documented ACP session updates and synthetic examples; other Grok clients and future schema changes are not guaranteed to work.
 

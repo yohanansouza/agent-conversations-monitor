@@ -354,3 +354,41 @@ if(!rows(cycle,{}).rows.length)throw Error('ciclo ocultou todos os registros');
 """
     result = subprocess.run(["node", "-e", script, str(root / "media" / "tree.js")], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
+
+
+def test_vinculos_antigravity_exigem_chamada_e_resultado_correspondentes(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    script = r"""
+const fs=require('fs'),path=require('path');const {CodexReader}=require(process.argv[1]);const {linkSessions,requestInfo}=require(process.argv[2]);const {build}=require(process.argv[3]);
+const dir=process.argv[4], id='aaaaaaaa-1111-2222-3333-444444444444', asyncId='bbbbbbbb-1111-2222-3333-444444444444', absent='cccccccc-1111-2222-3333-444444444444', ambiguous='dddddddd-1111-2222-3333-444444444444', other='eeeeeeee-1111-2222-3333-444444444444';
+const line=x=>JSON.stringify(x)+'\n';const meta=x=>({type:'session_meta',payload:{id:x}});
+const call=(id,cmd)=>({type:'response_item',payload:{type:'custom_tool_call',name:'exec',call_id:id,input:'const r=await tools.exec_command({cmd:'+JSON.stringify(cmd)+'});text(JSON.stringify(r))'}});
+const out=(id,value)=>({type:'response_item',payload:{type:'custom_tool_call_output',call_id:id,output:[{type:'input_text',text:JSON.stringify(value)}]}});
+const output=id=>JSON.stringify({conversation_id:id,status:'SUCCESS'});
+const f=path.join(dir,'rollout-parent.jsonl');fs.writeFileSync(f,[meta('parent'),
+ call('a','agy --output-format json --print="oi"'),out('a',{output:output(id),exit_code:0}),
+ call('b','agy --output-format json --print="oi"'),out('b',{output:'',session_id:123}),
+ {type:'response_item',payload:{type:'custom_tool_call',name:'exec',call_id:'poll',input:'const r=await tools.write_stdin({session_id:123,chars:""});text(JSON.stringify(r))'}},
+ out('poll',{output:output(asyncId),exit_code:0}),
+ call('missing','agy --output-format json --print="oi"'),out('missing',{output:output(absent),exit_code:0}),
+ call('ambiguous','agy --output-format json --print="oi"'),out('ambiguous',{output:output(ambiguous),exit_code:0}),
+ call('resume','agy --conversation 123 --print="oi"'),out('resume',{output:output(other),exit_code:0}),
+ {type:'response_item',payload:{type:'custom_tool_call',name:'exec',call_id:'wrong',input:'const r=await tools.exec_command({cmd:"echo agy"});text(JSON.stringify(r))'}},out('wrong',{output:output(other),exit_code:0})
+].map(line).join(''));
+fs.writeFileSync(path.join(dir,'rollout-other.jsonl'),[meta('other'),call('z','agy --print="oi"'),out('z',{output:output(ambiguous),exit_code:0})].map(line).join(''));
+(async()=>{
+ const reader=new CodexReader();const c=(await reader.collect(dir)).sessions;const p=c.find(x=>x.id==='codex:parent');
+ if(!p.antigravityIds.includes(id)||!p.antigravityIds.includes(asyncId)||p.antigravityIds.includes(other))throw Error('identificação de chamadas');
+ const s=[...c,...[id,asyncId,ambiguous,other].map(id=>({id,source:'Antigravity',children:[],events:[]}))];
+ s.find(x=>x.id===id).children.push({id:other,role:'Subagente'});
+ linkSessions(s);let ids=p.children.map(x=>x.id);
+ if(!ids.includes(id)||!ids.includes(asyncId)||ids.includes(absent)||ids.includes(ambiguous)||ids.includes(other))throw Error('vínculo inseguro: '+ids);
+ const graph=build(s);if(graph.parent.get(id)?.id!=='codex:parent'||graph.parent.get(other)?.id!==id)throw Error('hierarquia cruzada');
+ if(requestInfo({type:'custom_tool_call',name:'exec',input:'tools.exec_command({cmd:"agy --print oi"}); tools.exec_command({cmd:"echo oi"})'}))throw Error('chamadas agrupadas ambíguas');
+ const later='ffffffff-1111-2222-3333-444444444444';
+ fs.appendFileSync(f,[call('late','agy --print="oi"'),out('late',{output:output(later),exit_code:0})].map(line).join(''));
+ const refreshed=(await reader.collect(dir)).sessions.find(x=>x.id==='codex:parent');if(!refreshed.antigravityIds.includes(asyncId)||!refreshed.antigravityIds.includes(later))throw Error('atualização incremental');
+})().catch(e=>{console.error(e);process.exit(1)});
+"""
+    result = subprocess.run(["node", "-e", script, str(root / "codex-sessions.js"), str(root / "antigravity-links.js"), str(root / "media" / "tree.js"), str(tmp_path)], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr

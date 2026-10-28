@@ -1,6 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { StringDecoder } = require('string_decoder');
+const { CallTracker } = require('./antigravity-links');
 
 function textContent(content) {
   if (typeof content === 'string') return content;
@@ -32,6 +33,8 @@ function record(state, line) {
     return;
   }
   if (item.type !== 'response_item') return;
+  if (p.type === 'function_call' || p.type === 'custom_tool_call') state.calls.request(p);
+  if (p.type === 'function_call_output' || p.type === 'custom_tool_call_output') { state.calls.result(p); return; }
   const event = { created_at: item.timestamp };
   if (p.type === 'message' && (p.role === 'user' || p.role === 'assistant')) {
     event.type = p.role === 'user' ? 'USER_INPUT' : 'PLANNER_RESPONSE';
@@ -57,7 +60,7 @@ class CodexReader {
   async readFile(file, stat) {
     let state = this.cache.get(file);
     if (!state || stat.size < state.offset || (stat.mtimeMs !== state.mtime && stat.size === state.offset)) {
-      state = { offset: 0, remainder: '', decoder: new StringDecoder('utf8'), meta: null, events: [], truncated: false };
+      state = { offset: 0, remainder: '', decoder: new StringDecoder('utf8'), meta: null, events: [], truncated: false, calls: new CallTracker() };
       this.cache.set(file, state);
     }
     if (stat.size > state.offset) {
@@ -96,7 +99,7 @@ class CodexReader {
         const stat = await fs.stat(file);
         const state = await this.readFile(file, stat);
         if (!state.meta?.id) continue;
-        sessions.push({ id: `codex:${state.meta.id}`, source: 'Codex', modified: stat.mtimeMs, events: state.events, children: [], parent: state.meta.parent ? `codex:${state.meta.parent}` : '', role: state.meta.role, agentPath: state.meta.path || '/root', truncated: state.truncated, usage: state.usage || null, models: state.models || [] });
+        sessions.push({ id: `codex:${state.meta.id}`, source: 'Codex', modified: stat.mtimeMs, events: state.events, children: [], parent: state.meta.parent ? `codex:${state.meta.parent}` : '', role: state.meta.role, agentPath: state.meta.path || '/root', truncated: state.truncated, usage: state.usage || null, models: state.models || [], antigravityIds: [...state.calls.ids] });
       } catch (e) { if (e.code !== 'ENOENT') throw e; }
     }
     const byId = new Map(sessions.map(s => [s.id, s]));

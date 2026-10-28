@@ -21,6 +21,7 @@ Como alternativa, execute `code --install-extension caminho/do/arquivo.vsix` em 
 
 - Use as quatro visualizações **Filtros**, **Conversas encontradas**, **Chat** e **Conversas (modo nativo)**. No menu **...** do Monitor de Agentes, marque ou desmarque cada visualização para mostrá-la ou ocultá-la; também é possível recolher os cabeçalhos e arrastar os divisores do VS Code para ajustar suas alturas. Filtros e seleção de conversa são sincronizados entre as visualizações.
 - Em **Filtros**, escolha todos os registros, somente chats ou somente agentes. Em **Conversas encontradas**, use as setas para expandir os agentes e subagentes ligados a cada chat. A busca revela os ancestrais dos resultados. Agentes cujo registro principal não estiver disponível são identificados como vínculo indisponível; não são criados vínculos por suposição. O filtro de tipo afeta a lista **Conversas encontradas**; o modo nativo continua independente.
+- Sessões Antigravity podem aparecer sob o chat Codex que as iniciou quando uma chamada explícita ao `agy` retorna um identificador que corresponde a uma sessão local. Chamadas ambíguas, conversas retomadas, registros ausentes ou formatos não reconhecidos permanecem independentes; a ligação não garante que todas as chamadas serão identificadas.
 - Filtre conversas por origem e escolha o agente ou subagente para ler suas mensagens.
 - Pedidos e mensagens recebidas aparecem à direita; respostas e mensagens enviadas pelo agente selecionado, à esquerda. Cada origem tem sua cor e etiqueta.
 - Quando os dados estão disponíveis, o painel exibe tokens registrados por agente, incluindo entrada, saída e cache conforme a origem. Não é uma fatura, estimativa de custo ou medição garantida de consumo total; cache e raciocínio podem ter regras diferentes entre fontes. Não some valores de agentes sem verificar se as métricas se sobrepõem.
@@ -55,7 +56,7 @@ O código da extensão lê os arquivos locais configurados e não envia as conve
 
 O monitor depende de formatos internos dos agentes, que podem mudar. Atualizações aparecem após serem gravadas no disco e podem ter atraso. Sessões em nuvem, arquivadas ou criadas por outras interfaces podem não aparecer, e algumas sessões contêm contexto herdado. O painel exibe os 2.000 eventos mais recentes de cada sessão Codex.
 
-Conteúdos identificados como protegidos ou com o padrão de token codificado observado são substituídos por um aviso; o registro original permanece em **Detalhes técnicos**. A extensão não decifra o conteúdo e não garante identificar todos os formatos. Ela não comprova que uma chamada ao Antigravity veio do Codex nem determina com certeza se um agente está ativo.
+Conteúdos identificados como protegidos ou com o padrão de token codificado observado são substituídos por um aviso; o registro original permanece em **Detalhes técnicos**. A extensão não decifra o conteúdo e não garante identificar todos os formatos. Ela não determina com certeza se um agente está ativo.
 
 ## Desenvolvimento
 

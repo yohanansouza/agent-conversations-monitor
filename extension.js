@@ -6,6 +6,7 @@ const { CodexReader } = require('./codex-sessions');
 const { Notifications } = require('./notifications');
 const { collectClaude, collectGrok } = require('./other-sessions');
 const { NativeView } = require('./native-view');
+const { linkSessions } = require('./antigravity-links');
 
 class Monitor {
   constructor(context) {
@@ -74,6 +75,7 @@ class Monitor {
         sessions.push(...result.value.sessions.map(s => ({ ...s, source: name })));
       }
       sessions.sort((a, b) => b.modified - a.modified);
+      linkSessions(sessions);
       this.updateStatus();
       this.native.update(sessions, this.notifications.list(), warnings.join(' · '));
       this.lastMessage = { type: 'sessions', sessions, unread: this.notifications.list(), warning: warnings.join(' · ') };

@@ -12,7 +12,7 @@ out.parent.mkdir(exist_ok=True)
 with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as archive:
     archive.writestr("extension.vsixmanifest", manifest)
     archive.writestr("[Content_Types].xml", content_types)
-    allowed = {"package.json", "extension.js", "native-view.js", "sessions.js", "codex-sessions.js", "other-sessions.js", "notifications.js", "README.md", "README.pt-BR.md", "LICENSE"}
+    allowed = {"package.json", "extension.js", "native-view.js", "sessions.js", "codex-sessions.js", "antigravity-links.js", "other-sessions.js", "notifications.js", "README.md", "README.pt-BR.md", "LICENSE"}
     for file in root.rglob("*"):
         relative = file.relative_to(root)
         if file.is_file() and (relative.as_posix() in allowed or (relative.parts[0] == "media" and file.suffix in {".js", ".css", ".svg", ".md"})):
