@@ -10,7 +10,7 @@ let query = '';
 let fingerprint = '';
 let unread = [];
 const el = (tag, text, cls) => { const n = document.createElement(tag); if (text) n.textContent = text; if (cls) n.className = cls; return n; };
-const sourceClass = name => name === 'Codex' ? 'codex' : 'antigravity';
+const sourceClass = name => ({Codex:'codex',Antigravity:'antigravity',Claude:'claude',Grok:'grok'}[name] || 'codex');
 const badge = name => el('span', name, `badge ${sourceClass(name)}`);
 function clean(text) {
   return String(text || '').replace(/<USER_REQUEST>\s*/g, '').replace(/\s*<\/USER_REQUEST>[\s\S]*/g, '').replace(/^The following is a <SYSTEM_MESSAGE>[\s\S]*?<SYSTEM_MESSAGE>\s*/, '').replace(/\s*<\/SYSTEM_MESSAGE>\s*$/, '').trim();
@@ -66,6 +66,13 @@ function render() {
   const heading = el('div', '', 'detail-heading');
   heading.append(badge(current.source), el('h2', parent.get(current.id)?.role || title(current)));
   detail.append(heading, el('p', `ID: ${current.id.replace(/^codex:/, '')}`, 'id'));
+  if (current.usage) {
+    const u = current.usage; const fmt = n => Number.isFinite(n) ? n.toLocaleString('pt-BR') : 'indisponível';
+    const parts = [`Total: ${fmt(u.total)}`, `Entrada: ${fmt(u.input)}`, `Saída: ${fmt(u.output)}`];
+    if (Number.isFinite(u.cacheRead)) parts.push(`Leitura em cache: ${fmt(u.cacheRead)}`);
+    if (Number.isFinite(u.cacheWrite)) parts.push(`Criação de cache: ${fmt(u.cacheWrite)}`);
+    const box = el('div', '', 'usage'); box.append(el('strong', 'Tokens registrados'), el('p', parts.join(' · ')), el('small', u.label)); detail.append(box);
+  } else detail.append(el('p', 'Tokens: indisponível nos registros deste agente.', 'hint'));
   if (current.truncated) detail.append(el('p', 'Exibindo os 2.000 eventos mais recentes desta sessão.', 'hint'));
   if (parent.has(current.id)) detail.append(el('p', `Agente principal: ${parent.get(current.id).id}`, 'id'));
   function resolveRecipient(value) {

@@ -1,57 +1,51 @@
-# Monitor de Agentes: Codex e Antigravity
+# Agent Monitor
 
-Extensão independente para acompanhar, no VS Code, registros locais de conversas do Codex e do Antigravity CLI. O painel apresenta agentes e subagentes em uma lista, organiza mensagens em balões e avisa quando detecta novas conversas.
+**English** · [Português brasileiro](README.pt-BR.md)
 
-Este é um projeto comunitário **não oficial**, sem vínculo ou endosso da OpenAI ou do Google.
+An independent VS Code extension for viewing locally recorded conversations from Codex, Antigravity CLI, Claude Code, and Grok Build. It groups agents and subagents, displays messages in chat bubbles, and alerts you when new conversations appear. **Grok Build support is experimental** and has been tested with synthetic fixtures, not a real installation.
 
-## Instalação
+This community project is **unofficial** and is not affiliated with or endorsed by OpenAI, Google, Anthropic, or xAI.
 
-Requisitos: VS Code 1.90 ou superior e registros locais do Codex e/ou Antigravity CLI. A extensão não instala nem configura esses agentes.
+## Install
 
-1. Abra [Releases](https://github.com/yohanansouza/agent-conversations-monitor/releases/latest) e baixe o arquivo `.vsix` da versão mais recente.
-2. No VS Code, abra **Extensões** com `Ctrl+Shift+X` (macOS: `Cmd+Shift+X`).
-3. Clique no menu **...** da seção de extensões, escolha **Install from VSIX...** e selecione o arquivo baixado.
-4. Se solicitado, reinicie as extensões ou o VS Code. Abra o ícone **Monitor de agentes** na barra lateral.
+Requirements: VS Code 1.90 or later and local records from a supported agent. This extension does not install or configure the agents.
 
-Como alternativa, execute `code --install-extension caminho/do/arquivo.vsix` em um terminal onde o comando `code` esteja configurado. Instalar uma nova versão do VSIX é um processo manual; o projeto não está publicado no Marketplace.
+1. Download the `.vsix` file from the [latest release](https://github.com/yohanansouza/agent-conversations-monitor/releases/latest).
+2. Open **Extensions** in VS Code with `Ctrl+Shift+X` (macOS: `Cmd+Shift+X`).
+3. Select **... → Install from VSIX...** and choose the downloaded file.
+4. Restart extensions or VS Code if prompted. Open **Monitor de agentes** in the activity bar.
 
-## Uso
+Alternatively, run `code --install-extension path/to/file.vsix`. Updates from GitHub releases must be installed manually; the extension is not published on the VS Code Marketplace.
 
-- Filtre conversas por origem e escolha o agente ou subagente para ler suas mensagens.
-- Pedidos e mensagens recebidas aparecem à direita; respostas e mensagens enviadas pelo agente selecionado, à esquerda. Codex é verde e Antigravity é roxo.
-- Mensagens são apresentadas com Markdown. Chamadas estruturadas são formatadas para leitura, com o registro disponível em **Detalhes técnicos**.
-- O monitor atualiza os registros a cada três segundos. Novas conversas ou subagentes geram avisos clicáveis no painel e na barra de status; mensagens novas em conversas existentes não geram avisos.
+## Features
 
-Também é possível abrir o painel pela paleta de comandos: **Antigravity Monitor: Abrir visualizador**.
+- Filter sessions by provider, browse agent and subagent relationships, and read messages with Markdown formatting.
+- New conversations produce clickable notices in the panel and status bar. New messages within an existing session do not trigger notices.
+- Where records contain usage data, show per-agent input, output, cache and total tokens. These are recorded values, not a bill or guaranteed account-wide total; cache and reasoning conventions differ by provider. Agent totals may overlap.
+- Protected content and recognized encoded tokens are hidden behind an explanatory notice; original records remain in **Detalhes técnicos**. The monitor does not decrypt them.
 
-## Configuração
+## Configuration
 
-No VS Code, procure estas opções nas configurações:
+Search VS Code settings for:
 
-- `antigravityMonitor.refreshSeconds`: intervalo de atualização, entre 1 e 60 segundos.
-- `antigravityMonitor.codexPath`: pasta dos registros do Codex. Vazio usa `CODEX_HOME/sessions` ou `~/.codex/sessions`.
-- `antigravityMonitor.brainPath`: pasta `brain` do Antigravity CLI. Vazio usa `~/.gemini/antigravity-cli/brain`.
+- `antigravityMonitor.refreshSeconds`: polling interval, 1–60 seconds.
+- `antigravityMonitor.codexPath`: Codex sessions directory; defaults to `CODEX_HOME/sessions` or `~/.codex/sessions`.
+- `antigravityMonitor.brainPath`: Antigravity CLI brain directory; defaults to `~/.gemini/antigravity-cli/brain`.
+- `antigravityMonitor.claudePath`: Claude Code projects directory; defaults to `CLAUDE_CONFIG_DIR/projects` or `~/.claude/projects`.
+- `antigravityMonitor.grokPath`: Grok Build sessions directory; defaults to `GROK_HOME/sessions` or `~/.grok/sessions`.
 
-O monitor consulta os arquivos também quando o painel está fechado. Conversas existentes na inicialização não são consideradas novas; avisos não lidos não persistem após reiniciar o VS Code.
+Polling continues while VS Code is open, including when the panel is hidden. Existing sessions at startup are not announced as new, and unread notifications are not retained after restart.
 
-## Privacidade e limitações
+## Privacy and limitations
 
-O código da extensão lê os arquivos locais configurados e não envia as conversas para serviços externos. Esses arquivos podem conter informações confidenciais: quem tiver acesso ao computador e ao painel poderá visualizá-las. Links HTTP/HTTPS tornam-se clicáveis; clicar em um deles abre seu destino. HTML é exibido como texto e imagens remotas não são carregadas.
+The extension reads configured local files and does not transmit conversation content to external services. Those records can contain sensitive information visible to anyone with access to your computer and the panel. HTTP/HTTPS links are clickable and open their destination; HTML is rendered as text, and remote images are not loaded.
 
-O monitor depende de formatos internos dos agentes, que podem mudar. Atualizações aparecem após serem gravadas no disco e podem ter atraso. Sessões em nuvem, arquivadas ou criadas por outras interfaces podem não aparecer, e algumas sessões contêm contexto herdado. O painel exibe os 2.000 eventos mais recentes de cada sessão Codex.
+Providers use internal formats that may change. Records can be delayed, missing, protected, or inherited from earlier contexts. Cloud, archived, and other application sessions may not appear. Only the latest 2,000 Codex events per session are displayed. Usage fields can be missing, incomplete, or differ between providers; unavailable values are not estimated. The monitor cannot reliably determine whether an Antigravity call was initiated by Codex or whether an agent is active.
 
-Conteúdos identificados como protegidos ou com o padrão de token codificado observado são substituídos por um aviso; o registro original permanece em **Detalhes técnicos**. A extensão não decifra o conteúdo e não garante identificar todos os formatos. Ela não comprova que uma chamada ao Antigravity veio do Codex nem determina com certeza se um agente está ativo.
+Claude Code has been checked against locally available session files. Grok Build support is based on documented ACP session updates and synthetic examples; other Grok clients and future schema changes are not guaranteed to work.
 
-## Desenvolvimento
+## Development
 
-O pacote VSIX pode ser gerado localmente com Python 3:
+Run `python build_vsix.py` to create a VSIX under `dist/`. Run `python -m pytest tests/test_monitor_codex.py -q` with Python, pytest, and Node.js installed. The bundled Markdown parser Marked 17.0.5 has its own [license](media/marked-LICENSE.md).
 
-```sh
-python build_vsix.py
-```
-
-O arquivo é gerado em `dist/`. Para executar os testes, instale Python, pytest e Node.js e rode `python -m pytest tests/test_monitor_codex.py -q`. O parser Markdown Marked 17.0.5 está incluído sob sua própria licença em [media/marked-LICENSE.md](media/marked-LICENSE.md).
-
-## Licença
-
-O projeto usa a [licença MIT](LICENSE). Dependências de terceiros mantêm suas respectivas licenças.
+The project is licensed under the [MIT License](LICENSE); third-party dependencies retain their own licenses.

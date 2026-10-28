@@ -152,3 +152,50 @@ if (safeUrl('javascript:alert(1)') || safeUrl('file:///C:/test') || !safeUrl('ht
         capture_output=True, text=True, check=False,
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_claude_e_grok_contagem_e_hierarquia(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    script = r"""
+const fs=require('fs'), path=require('path');
+const {collectClaude,collectGrok}=require(process.argv[1]); const root=process.argv[2];
+const write=(f,items)=>{fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,items.map(x=>JSON.stringify(x)).join('\n')+'\n');};
+const claude=path.join(root,'claude'), grok=path.join(root,'grok');
+write(path.join(claude,'project','s1.jsonl'),[
+ {type:'user',message:{content:'Olá'}},
+ {type:'assistant',message:{id:'m1',content:[{type:'text',text:'Oi'}],usage:{input_tokens:10,output_tokens:2,cache_read_input_tokens:3}}},
+ {type:'assistant',message:{id:'m1',content:[{type:'text',text:'Mais'}],usage:{input_tokens:10,output_tokens:5,cache_read_input_tokens:3}}},
+]);
+write(path.join(claude,'project','s1','subagents','agent-a.jsonl'),[{type:'assistant',message:{id:'child',content:[{type:'text',text:'Subagente'}],usage:{input_tokens:2,output_tokens:1}}}]);
+const dir=path.join(grok,'project','g1');
+write(path.join(dir,'updates.jsonl'),[
+ {params:{_meta:{promptId:'p1'},update:{sessionUpdate:'user_message_chunk',content:{text:'Pergunta'}}}},
+ {params:{_meta:{promptId:'p1'},update:{sessionUpdate:'agent_message_chunk',content:{text:'Res'}}}},
+ {params:{_meta:{promptId:'p1'},update:{sessionUpdate:'agent_message_chunk',content:{text:'posta'}}}},
+ {params:{update:{sessionUpdate:'turn_completed',prompt_id:'p1',usage:{inputTokens:100,outputTokens:10,cachedReadTokens:20}}}},
+ {params:{update:{sessionUpdate:'turn_completed',prompt_id:'p1',usage:{inputTokens:100,outputTokens:10,cachedReadTokens:20}}}}
+]);
+fs.writeFileSync(path.join(dir,'summary.json'),JSON.stringify({info:{id:'g1'}}));
+(async()=>{
+ const c=(await collectClaude(claude)).sessions; const p=c.find(s=>s.id==='claude:s1');
+ if(p.children.length!==1 || p.usage.total!==18 || p.usage.output!==5 || !p.events.some(e=>e.content==='Olá')) throw Error('Claude: vínculo ou consumo incorreto');
+ const g=(await collectGrok(grok)).sessions[0];
+ if(g.events[1].content!=='Resposta' || g.usage.total!==110 || g.usage.cacheRead!==20) throw Error('Grok: mensagens ou contagem incorretas');
+ if((await collectGrok(path.join(root,'missing'))).sessions.length!==0) throw Error('pasta inexistente');
+})().catch(e=>{console.error(e);process.exit(1)});
+"""
+    result = subprocess.run(["node", "-e", script, str(root / "other-sessions.js"), str(tmp_path)], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+
+
+def test_tokens_codex_sao_a_ultima_leitura_acumulada(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    script = r"""
+const fs=require('fs'),path=require('path');const {CodexReader}=require(process.argv[1]);const f=path.join(process.argv[2],'rollout-test.jsonl');
+const meta={type:'session_meta',payload:{id:'abc'}};
+const usage=(i,o)=>({type:'event_msg',payload:{type:'token_count',info:{total_token_usage:{input_tokens:i,output_tokens:o,total_tokens:i+o,cached_input_tokens:4}}}});
+fs.writeFileSync(f,[meta,usage(10,2),usage(15,3)].map(JSON.stringify).join('\n')+'\n');
+new CodexReader().collect(process.argv[2]).then(r=>{if(r.sessions[0].usage.total!==18 || r.sessions[0].usage.input!==15) throw Error('total acumulado contado incorretamente');}).catch(e=>{console.error(e);process.exit(1)});
+"""
+    result = subprocess.run(["node", "-e", script, str(root / "codex-sessions.js"), str(tmp_path)], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr

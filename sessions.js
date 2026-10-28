@@ -18,7 +18,15 @@ async function collectSessions(brain) {
     let entries = [];
     try { entries = await fs.readdir(path.join(root, 'subagents')); } catch { /* sem subagentes */ }
     const children = (await Promise.all(entries.map(name => readJson(path.join(root, 'subagents', name))))).filter(child => child && idPattern.test(child.conversationId || '')).map(child => ({ id: child.conversationId, role: child.subagentDescriptor?.role || 'Subagente', state: child.state || '' }));
-    return { id: d.name, modified: stat.mtimeMs, events: parseTranscript(text), children };
+    const events = parseTranscript(text);
+    const records = events.filter(e => Number.isFinite(e.input_tokens) && Number.isFinite(e.output_tokens));
+    let usage = null;
+    if (records.length) {
+      usage = {input:0,output:0,cacheRead:0,label:'Soma dos registros disponíveis; entrada pode incluir cache.'};
+      for (const e of records) { usage.input += e.input_tokens; usage.output += e.output_tokens; usage.cacheRead += Number.isFinite(e.cache_read_tokens) ? e.cache_read_tokens : 0; }
+      usage.total = usage.input + usage.output;
+    }
+    return { id: d.name, modified: stat.mtimeMs, events, children, usage };
   }));
   return { sessions: sessions.filter(Boolean).sort((a, b) => b.modified - a.modified), warning: '' };
 }

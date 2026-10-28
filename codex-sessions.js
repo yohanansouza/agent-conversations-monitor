@@ -17,6 +17,11 @@ function record(state, line) {
     state.meta = { id: p.id, parent: spawn?.parent_thread_id, role: spawn?.agent_nickname || spawn?.agent_path || spawn?.agent_role || 'Subagente', path: spawn?.agent_path };
     return;
   }
+  if (item.type === 'event_msg' && p.type === 'token_count' && p.info?.total_token_usage) {
+    const u = p.info.total_token_usage;
+    if (Number.isFinite(u.input_tokens) && Number.isFinite(u.output_tokens) && Number.isFinite(u.total_tokens)) state.usage = { input:u.input_tokens, output:u.output_tokens, total:u.total_tokens, cacheRead:u.cached_input_tokens, label:'Total registrado da sessão; entrada inclui cache e saída inclui raciocínio quando registrado.' };
+    return;
+  }
   if (item.type !== 'response_item') return;
   const event = { created_at: item.timestamp };
   if (p.type === 'message' && (p.role === 'user' || p.role === 'assistant')) {
@@ -33,7 +38,7 @@ function record(state, line) {
     let args; try { args = JSON.parse(p.arguments || '{}'); } catch { args = {}; }
     event.type = 'CODEX_CALL'; event.name = p.name; event.args = args;
   } else return;
-  if (!event.content && !event.name) return;
+  if (!event.content && !event.name && !event.hasProtectedContent) return;
   state.events.push(event);
   if (state.events.length > 2000) { state.events.shift(); state.truncated = true; }
 }
@@ -82,7 +87,7 @@ class CodexReader {
         const stat = await fs.stat(file);
         const state = await this.readFile(file, stat);
         if (!state.meta?.id) continue;
-        sessions.push({ id: `codex:${state.meta.id}`, source: 'Codex', modified: stat.mtimeMs, events: state.events, children: [], parent: state.meta.parent ? `codex:${state.meta.parent}` : '', role: state.meta.role, agentPath: state.meta.path || '/root', truncated: state.truncated });
+        sessions.push({ id: `codex:${state.meta.id}`, source: 'Codex', modified: stat.mtimeMs, events: state.events, children: [], parent: state.meta.parent ? `codex:${state.meta.parent}` : '', role: state.meta.role, agentPath: state.meta.path || '/root', truncated: state.truncated, usage: state.usage || null });
       } catch (e) { if (e.code !== 'ENOENT') throw e; }
     }
     const byId = new Map(sessions.map(s => [s.id, s]));

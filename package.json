@@ -1,8 +1,8 @@
 {
   "name": "antigravity-conversations-monitor",
-  "displayName": "Monitor de Agentes: Codex e Antigravity",
-  "description": "Visualiza registros locais de conversas e subagentes do Codex e Antigravity CLI.",
-  "version": "0.6.0",
+  "displayName": "Monitor de Agentes",
+  "description": "Visualiza registros locais de agentes Codex, Antigravity CLI, Claude Code e Grok Build.",
+  "version": "0.7.0",
   "publisher": "bottrade-local",
   "engines": { "vscode": "^1.90.0" },
   "categories": ["Other"],
@@ -11,10 +11,12 @@
   "contributes": {
     "commands": [{ "command": "antigravityMonitor.open", "title": "Antigravity Monitor: Abrir visualizador" }],
     "viewsContainers": { "activitybar": [{ "id": "antigravityMonitor", "title": "Monitor de agentes", "icon": "media/icon.svg" }] },
-    "views": { "antigravityMonitor": [{ "id": "antigravityMonitor.view", "name": "Conversas de agentes", "type": "webview" }] },
+    "views": { "antigravityMonitor": [{ "id": "antigravityMonitor.view", "name": "Conversas", "type": "webview" }] },
     "configuration": { "title": "Antigravity Monitor", "properties": {
       "antigravityMonitor.brainPath": { "type": "string", "default": "", "description": "Pasta brain do Antigravity CLI. Vazio usa ~/.gemini/antigravity-cli/brain." },
       "antigravityMonitor.codexPath": { "type": "string", "default": "", "description": "Pasta sessions do Codex. Vazio usa CODEX_HOME/sessions ou ~/.codex/sessions." },
+      "antigravityMonitor.claudePath": { "type": "string", "default": "", "description": "Pasta projects do Claude Code. Vazio usa CLAUDE_CONFIG_DIR/projects ou ~/.claude/projects." },
+      "antigravityMonitor.grokPath": { "type": "string", "default": "", "description": "Pasta sessions do Grok Build. Vazio usa GROK_HOME/sessions ou ~/.grok/sessions." },
       "antigravityMonitor.refreshSeconds": { "type": "number", "default": 3, "minimum": 1, "maximum": 60, "description": "Intervalo de atualização em segundos." }
     }}
   }
