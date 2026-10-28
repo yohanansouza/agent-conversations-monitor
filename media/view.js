@@ -49,10 +49,13 @@ function render() {
     const descendants = s.children.map(c => map.get(c.id)).filter(Boolean);
     if (!query || haystack.includes(query) || descendants.some(c => `${title(c)} ${c.id}`.toLowerCase().includes(query))) {
       const button = el('button', '', 'session' + (s.id === selected ? ' selected' : ''));
-      button.style.marginLeft = `${Math.min(depth, 4) * 12}px`;
+      const indent = Math.min(depth, 4) * 12;
+      button.style.marginLeft = `${indent}px`;
+      button.style.width = `calc(100% - ${indent}px)`;
       const meta = el('small', '', 'session-meta');
-      meta.append(badge(s.source), document.createTextNode(` · ${new Date(s.modified).toLocaleString('pt-BR')} · ${s.id.replace(/^codex:/, '').slice(0, 8)}`));
+      meta.append(badge(s.source), document.createTextNode(` · ${new Date(s.modified).toLocaleString('pt-BR')} · ${monitorFormat.compactTokens(s.usage?.total)}`));
       button.append(el('span', label || title(s)), meta);
+      if (s.models?.length) button.append(el('small', monitorFormat.modelLabels(s.models).join(' | '), 'session-models'));
       button.onclick = () => openSession(s.id);
       list.append(button);
     }
@@ -66,6 +69,7 @@ function render() {
   const heading = el('div', '', 'detail-heading');
   heading.append(badge(current.source), el('h2', parent.get(current.id)?.role || title(current)));
   detail.append(heading, el('p', `ID: ${current.id.replace(/^codex:/, '')}`, 'id'));
+  detail.append(el('p', `Modelos e esforços registrados: ${monitorFormat.modelLabels(current.models).join(' | ')}`, 'id'));
   if (current.usage) {
     const u = current.usage; const fmt = n => Number.isFinite(n) ? n.toLocaleString('pt-BR') : 'indisponível';
     const parts = [`Total: ${fmt(u.total)}`, `Entrada: ${fmt(u.input)}`, `Saída: ${fmt(u.output)}`];

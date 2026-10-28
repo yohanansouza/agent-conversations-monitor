@@ -163,7 +163,7 @@ const write=(f,items)=>{fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeF
 const claude=path.join(root,'claude'), grok=path.join(root,'grok');
 write(path.join(claude,'project','s1.jsonl'),[
  {type:'user',message:{content:'Olá'}},
- {type:'assistant',message:{id:'m1',content:[{type:'text',text:'Oi'}],usage:{input_tokens:10,output_tokens:2,cache_read_input_tokens:3}}},
+ {type:'assistant',message:{id:'m1',model:'claude-sonnet-5',content:[{type:'text',text:'Oi'}],usage:{input_tokens:10,output_tokens:2,cache_read_input_tokens:3}}},
  {type:'assistant',message:{id:'m1',content:[{type:'text',text:'Mais'}],usage:{input_tokens:10,output_tokens:5,cache_read_input_tokens:3}}},
 ]);
 write(path.join(claude,'project','s1','subagents','agent-a.jsonl'),[{type:'assistant',message:{id:'child',content:[{type:'text',text:'Subagente'}],usage:{input_tokens:2,output_tokens:1}}}]);
@@ -172,19 +172,40 @@ write(path.join(dir,'updates.jsonl'),[
  {params:{_meta:{promptId:'p1'},update:{sessionUpdate:'user_message_chunk',content:{text:'Pergunta'}}}},
  {params:{_meta:{promptId:'p1'},update:{sessionUpdate:'agent_message_chunk',content:{text:'Res'}}}},
  {params:{_meta:{promptId:'p1'},update:{sessionUpdate:'agent_message_chunk',content:{text:'posta'}}}},
- {params:{update:{sessionUpdate:'turn_completed',prompt_id:'p1',usage:{inputTokens:100,outputTokens:10,cachedReadTokens:20}}}},
+ {params:{update:{sessionUpdate:'turn_completed',prompt_id:'p1',usage:{inputTokens:100,outputTokens:10,cachedReadTokens:20,modelUsage:{'grok-test':{}}}}}},
  {params:{update:{sessionUpdate:'turn_completed',prompt_id:'p1',usage:{inputTokens:100,outputTokens:10,cachedReadTokens:20}}}}
 ]);
 fs.writeFileSync(path.join(dir,'summary.json'),JSON.stringify({info:{id:'g1'}}));
 (async()=>{
  const c=(await collectClaude(claude)).sessions; const p=c.find(s=>s.id==='claude:s1');
- if(p.children.length!==1 || p.usage.total!==18 || p.usage.output!==5 || !p.events.some(e=>e.content==='Olá')) throw Error('Claude: vínculo ou consumo incorreto');
+ if(p.children.length!==1 || p.usage.total!==18 || p.usage.output!==5 || p.models[0]?.model!=='claude-sonnet-5' || p.models[0]?.effort!==null || !p.events.some(e=>e.content==='Olá')) throw Error('Claude: vínculo, modelo ou consumo incorreto');
  const g=(await collectGrok(grok)).sessions[0];
- if(g.events[1].content!=='Resposta' || g.usage.total!==110 || g.usage.cacheRead!==20) throw Error('Grok: mensagens ou contagem incorretas');
+ if(g.events[1].content!=='Resposta' || g.usage.total!==110 || g.usage.cacheRead!==20 || g.models[0]?.model!=='grok-test') throw Error('Grok: mensagens, modelo ou contagem incorretas');
  if((await collectGrok(path.join(root,'missing'))).sessions.length!==0) throw Error('pasta inexistente');
 })().catch(e=>{console.error(e);process.exit(1)});
 """
     result = subprocess.run(["node", "-e", script, str(root / "other-sessions.js"), str(tmp_path)], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+
+
+def test_modelos_e_esforcos_por_turno_e_tokens_resumidos(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    script = r"""
+const fs=require('fs'),path=require('path');const {CodexReader}=require(process.argv[1]);const f=require(process.argv[2]);
+const file=path.join(process.argv[3],'rollout-models.jsonl');
+const line=x=>JSON.stringify(x)+'\n';
+fs.writeFileSync(file,line({type:'session_meta',payload:{id:'model-test'}})+line({type:'turn_context',payload:{model:'gpt-6.1-sol',effort:'medium'}})+line({type:'turn_context',payload:{model:'gpt-6.1-sol',effort:'medium'}})+line({type:'turn_context',payload:{model:'gpt-6.1-terra',effort:'high'}}));
+(async()=>{
+ const reader=new CodexReader();let s=(await reader.collect(process.argv[3])).sessions[0];
+ if(s.models.length!==2 || s.models[0].model!=='gpt-6.1-sol' || s.models[1].effort!=='high') throw Error('modelos não preservados');
+ fs.appendFileSync(file,line({type:'turn_context',payload:{model:'gpt-6-luna'}}));
+ s=(await reader.collect(process.argv[3])).sessions[0];
+ if(s.models.length!==3 || s.models[2].effort!==null) throw Error('modelo incremental ou esforço ausente');
+ if(f.compactTokens(1200000)!=='1,2 mi tokens' || f.compactTokens(null)!=='tokens indisponíveis' || f.compactTokens(0)!=='0 tokens') throw Error('resumo de tokens incorreto');
+ if(!f.modelLabels(s.models)[2].includes('esforço: indisponível') || !f.modelLabels([])[0].includes('indisponíveis')) throw Error('campo ausente');
+})().catch(e=>{console.error(e);process.exit(1)});
+"""
+    result = subprocess.run(["node", "-e", script, str(root / "codex-sessions.js"), str(root / "media" / "format.js"), str(tmp_path)], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
 

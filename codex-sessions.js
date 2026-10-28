@@ -17,6 +17,15 @@ function record(state, line) {
     state.meta = { id: p.id, parent: spawn?.parent_thread_id, role: spawn?.agent_nickname || spawn?.agent_path || spawn?.agent_role || 'Subagente', path: spawn?.agent_path };
     return;
   }
+  if (item.type === 'turn_context') {
+    const model = typeof p.model === 'string' && p.model.trim() ? p.model.trim() : null;
+    const effort = typeof p.effort === 'string' && p.effort.trim() ? p.effort.trim() : null;
+    if (model || effort) {
+      state.models ||= [];
+      if (!state.models.some(entry => entry.model === model && entry.effort === effort)) state.models.push({model, effort});
+    }
+    return;
+  }
   if (item.type === 'event_msg' && p.type === 'token_count' && p.info?.total_token_usage) {
     const u = p.info.total_token_usage;
     if (Number.isFinite(u.input_tokens) && Number.isFinite(u.output_tokens) && Number.isFinite(u.total_tokens)) state.usage = { input:u.input_tokens, output:u.output_tokens, total:u.total_tokens, cacheRead:u.cached_input_tokens, label:'Total registrado da sessão; entrada inclui cache e saída inclui raciocínio quando registrado.' };
@@ -87,7 +96,7 @@ class CodexReader {
         const stat = await fs.stat(file);
         const state = await this.readFile(file, stat);
         if (!state.meta?.id) continue;
-        sessions.push({ id: `codex:${state.meta.id}`, source: 'Codex', modified: stat.mtimeMs, events: state.events, children: [], parent: state.meta.parent ? `codex:${state.meta.parent}` : '', role: state.meta.role, agentPath: state.meta.path || '/root', truncated: state.truncated, usage: state.usage || null });
+        sessions.push({ id: `codex:${state.meta.id}`, source: 'Codex', modified: stat.mtimeMs, events: state.events, children: [], parent: state.meta.parent ? `codex:${state.meta.parent}` : '', role: state.meta.role, agentPath: state.meta.path || '/root', truncated: state.truncated, usage: state.usage || null, models: state.models || [] });
       } catch (e) { if (e.code !== 'ENOENT') throw e; }
     }
     const byId = new Map(sessions.map(s => [s.id, s]));

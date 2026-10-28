@@ -15,6 +15,7 @@ input,select{box-sizing:border-box;width:100%;padding:7px;margin-bottom:5px;colo
 .session.selected{background:var(--vscode-list-activeSelectionBackground);color:var(--vscode-list-activeSelectionForeground)}
 .session span,.session small{display:block;overflow:hidden;text-overflow:ellipsis}
 .session small{opacity:.75;margin-top:3px}
+.session .session-meta,.session .session-models{overflow:visible;white-space:normal;overflow-wrap:anywhere}
 .session .badge{display:inline-block;vertical-align:middle}
 .badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:.8em;font-weight:700;letter-spacing:.02em;white-space:nowrap}
 .badge.codex{background:#164e42;color:#c6fff0}

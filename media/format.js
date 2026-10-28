@@ -62,5 +62,12 @@
     if (hasProtectedContent && (!payload || !isProtectedToken(payload))) lines.push(protectedNotice);
     return { text: lines.join('\n\n'), raw };
   }
-  return { decode, formatCall, formatSystemMessage, formatAgentMessage, isProtectedToken };
+  function compactTokens(total) {
+    return Number.isFinite(total) && total >= 0 ? `${new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 }).format(total).replace(/\u00a0/g, ' ')} tokens` : 'tokens indisponíveis';
+  }
+  function modelLabels(models) {
+    if (!Array.isArray(models) || !models.length) return ['Modelo e esforço indisponíveis'];
+    return models.map(entry => `${entry.model || 'Modelo indisponível'} · esforço: ${entry.effort || 'indisponível'}`);
+  }
+  return { decode, formatCall, formatSystemMessage, formatAgentMessage, isProtectedToken, compactTokens, modelLabels };
 });

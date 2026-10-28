@@ -22,6 +22,7 @@ Como alternativa, execute `code --install-extension caminho/do/arquivo.vsix` em 
 - Filtre conversas por origem e escolha o agente ou subagente para ler suas mensagens.
 - Pedidos e mensagens recebidas aparecem à direita; respostas e mensagens enviadas pelo agente selecionado, à esquerda. Cada origem tem sua cor e etiqueta.
 - Quando os dados estão disponíveis, o painel exibe tokens registrados por agente, incluindo entrada, saída e cache conforme a origem. Não é uma fatura, estimativa de custo ou medição garantida de consumo total; cache e raciocínio podem ter regras diferentes entre fontes. Não some valores de agentes sem verificar se as métricas se sobrepõem.
+- A lista resume o total de tokens; o quadro **Tokens registrados** mantém os valores detalhados. O painel identifica modelos e níveis de esforço encontrados nos registros, inclusive diferentes combinações na mesma sessão. Quando algum campo não é registrado, aparece como indisponível; os dados históricos podem ser incompletos.
 - Mensagens são apresentadas com Markdown. Chamadas estruturadas são formatadas para leitura, com o registro disponível em **Detalhes técnicos**.
 - O monitor atualiza os registros a cada três segundos. Novas conversas ou subagentes geram avisos clicáveis no painel e na barra de status; mensagens novas em conversas existentes não geram avisos.
 

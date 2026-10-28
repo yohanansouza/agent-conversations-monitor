@@ -13,6 +13,7 @@ function conversationText(session, sessions) {
   if (!session) return 'Esta conversa não está mais disponível nos registros locais.';
   const lines = [`${session.source} — ${title(session)}`, `ID: ${session.id}`];
   if (session.parent) lines.push(`Agente principal: ${session.parent}`);
+  lines.push(`Modelos e esforços registrados: ${format.modelLabels(session.models).join(' | ')}`);
   const u = session.usage;
   if (u) {
     const num = n => Number.isFinite(n) ? n.toLocaleString('pt-BR') : 'indisponível';
@@ -69,8 +70,8 @@ class NativeView {
     const s = element.session;
     const hasChildren = (s.children || []).some(c => this.sessions.some(child => child.id === c.id));
     const item = new vscode.TreeItem(element.role || title(s), hasChildren ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None);
-    item.id = s.id; item.description = `${s.source}${this.unread.has(s.id) ? ' · nova' : ''}`;
-    item.tooltip = `${s.source} · ${s.id}\nSelecione para abrir a conversa nativa.`;
+    item.id = s.id; item.description = `${s.source} · ${format.compactTokens(s.usage?.total)}${this.unread.has(s.id) ? ' · nova' : ''}`;
+    item.tooltip = `${s.source} · ${s.id}\n${format.modelLabels(s.models).join('\n')}\nSelecione para abrir a conversa nativa.`;
     item.iconPath = new vscode.ThemeIcon(this.unread.has(s.id) ? 'bell-dot' : 'comment-discussion');
     item.command = {command:'antigravityMonitor.openNativeConversation', title:'Abrir conversa', arguments:[s.id]};
     return item;
