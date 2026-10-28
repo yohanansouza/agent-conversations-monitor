@@ -273,12 +273,12 @@ def test_divisor_mantem_altura_apos_atualizacao():
     script = r"""
 const vm=require('vm'),fs=require('fs');let saved=null;const listeners={};
 class Element {constructor(tag){this.tag=tag;this.children=[];this.events={};this.style={};this.value='';this.scrollTop=0;this.attrs={};this.open=true;} append(...xs){this.children.push(...xs)} replaceChildren(){this.children=[]} addEventListener(n,f){this.events[n]=f} setAttribute(k,v){this.attrs[k]=v} getBoundingClientRect(){return {height:parseFloat(this.style.height)||150}} querySelector(selector){for(const child of this.children){if(selector==='.'+child.className)return child;const result=child.querySelector?.(selector);if(result)return result;}return null}}
-const nodes={};for(const id of ['app','status','search','source','new-conversations','refresh','list-container','chat-container','filters-panel','conversations-panel','chat-panel'])nodes[id]=new Element('div');
+const nodes={};for(const id of ['app','status','search','source','kind','new-conversations','refresh','list-container','chat-container','filters-panel','conversations-panel','chat-panel'])nodes[id]=new Element('div');nodes.kind.value='all';
 nodes.app.append(nodes['list-container'],nodes['chat-container']);
 const doc={getElementById:id=>nodes[id],createElement:tag=>new Element(tag),createTextNode:text=>({textContent:text})};
 const api={getState:()=>saved,setState:x=>{saved=x},postMessage:()=>{}};
 const win={innerHeight:800,scrollY:0,scrollTo:()=>{},addEventListener:(n,f)=>listeners[n]=f,removeEventListener:(n,f)=>{if(listeners[n]===f)delete listeners[n]}};
-const ctx={document:doc,window:win,acquireVsCodeApi:()=>api,monitorFormat:require(process.argv[2]),monitorMarkdown:{render:()=>new Element('p')},marked:{},Intl,Date,Number,Map,Set};
+const ctx={document:doc,window:win,acquireVsCodeApi:()=>api,monitorFormat:require(process.argv[2]),monitorTree:require(process.argv[3]),monitorMarkdown:{render:()=>new Element('p')},marked:{},Intl,Date,Number,Map,Set};
 vm.runInNewContext(fs.readFileSync(process.argv[1],'utf8'),ctx);
 const data={type:'sessions',sessions:[{id:'a',source:'Codex',modified:Date.now(),events:[],children:[],usage:null}],unread:[]};
 listeners.message({data});
@@ -295,32 +295,62 @@ if(saved.sections['filters-panel']!==false || saved.sections['chat-panel']!==fal
 nodes['chat-panel'].open=true;nodes['chat-panel'].events.toggle();
 if(!saved.sections['chat-panel'] || saved.sections['filters-panel']!==false)throw Error('seção não reabriu de forma independente');
 """
-    result = subprocess.run(["node", "-e", script, str(root / "media" / "view.js"), str(root / "media" / "format.js")], capture_output=True, text=True, check=False)
+    result = subprocess.run(["node", "-e", script, str(root / "media" / "view.js"), str(root / "media" / "format.js"), str(root / "media" / "tree.js")], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
 
 def test_visualizacoes_sincronizam_filtros_e_selecao():
     root = Path(__file__).resolve().parents[1]
     script = r"""
-const vm=require('vm'),fs=require('fs');const contexts=[];let shared={source:'',query:'',selected:''};
+const vm=require('vm'),fs=require('fs');const contexts=[];let shared={source:'',query:'',selected:'',kind:'all'};
 class Element {constructor(tag){this.tag=tag;this.children=[];this.events={};this.style={};this.value='';this.scrollTop=0;this.open=true;this.className=''} append(...xs){this.children.push(...xs)} replaceChildren(){this.children=[]} addEventListener(n,f){this.events[n]=f} setAttribute(){} getBoundingClientRect(){return {height:150}} querySelector(selector){for(const child of this.children){if(selector==='.'+child.className)return child;const result=child.querySelector?.(selector);if(result)return result;}return null}}
 const raw=fs.readFileSync(process.argv[1],'utf8');
 function create(mode){
- const nodes={};for(const id of ['app','status','search','source','new-conversations','refresh','list-container','chat-container','filters-panel','conversations-panel','chat-panel'])nodes[id]=new Element('div');nodes.app.append(nodes['list-container'],nodes['chat-container']);
+ const nodes={};for(const id of ['app','status','search','source','kind','new-conversations','refresh','list-container','chat-container','filters-panel','conversations-panel','chat-panel'])nodes[id]=new Element('div');nodes.kind.value='all';nodes.app.append(nodes['list-container'],nodes['chat-container']);
  const handlers={};const doc={body:{classList:{contains:name=>name==='mode-'+mode}},getElementById:id=>nodes[id],createElement:tag=>new Element(tag),createTextNode:text=>({textContent:text})};
- const api={getState:()=>null,setState:()=>{},postMessage:message=>{if(message.type==='uiState'){for(const key of ['source','query','selected'])if(typeof message[key]==='string')shared[key]=message[key];for(const c of contexts)c.handlers.message({data:{type:'uiState',...shared}});}}};
+ const api={getState:()=>null,setState:()=>{},postMessage:message=>{if(message.type==='uiState'){for(const key of ['source','query','selected','kind'])if(typeof message[key]==='string')shared[key]=message[key];for(const c of contexts)c.handlers.message({data:{type:'uiState',...shared}});}}};
  const win={innerHeight:800,scrollY:0,scrollTo:()=>{},addEventListener:(n,f)=>handlers[n]=f,removeEventListener:()=>{}};
- const ctx=vm.createContext({document:doc,window:win,acquireVsCodeApi:()=>api,monitorFormat:require(process.argv[2]),monitorMarkdown:{render:()=>new Element('p')},marked:{},Intl,Date,Number,Map,Set});vm.runInContext(raw,ctx);const c={nodes,handlers,ctx};contexts.push(c);return c;
+ const ctx=vm.createContext({document:doc,window:win,acquireVsCodeApi:()=>api,monitorFormat:require(process.argv[2]),monitorTree:require(process.argv[3]),monitorMarkdown:{render:()=>new Element('p')},marked:{},Intl,Date,Number,Map,Set});vm.runInContext(raw,ctx);const c={nodes,handlers,ctx};contexts.push(c);return c;
 }
 const filters=create('filters'),list=create('sessions'),chat=create('chat');
-const data={type:'sessions',sessions:[{id:'a',source:'Codex',modified:1,events:[{type:'USER_INPUT',content:'Primeira'}],children:[]},{id:'b',source:'Claude',modified:2,events:[{type:'USER_INPUT',content:'Segunda'}],children:[]}],unread:[]};
+const data={type:'sessions',sessions:[{id:'a',source:'Codex',modified:1,events:[{type:'USER_INPUT',content:'Primeira'}],children:[{id:'child',role:'Revisor'}]},{id:'child',parent:'a',source:'Codex',modified:1,events:[],children:[]},{id:'b',source:'Claude',modified:2,events:[{type:'USER_INPUT',content:'Segunda'}],children:[]}],unread:[]};
 for(const c of contexts)c.handlers.message({data});
-let items=list.nodes['list-container'].querySelector('.list').children;if(items.length!==2)throw Error('lista inicial');items[1].onclick();
+let items=list.nodes['list-container'].querySelector('.list').children;if(items.length!==2)throw Error('lista inicial');items[1].children.at(-1).onclick();
 if(shared.selected!=='b' || vm.runInContext('selected',chat.ctx)!=='b')throw Error('chat não acompanhou seleção');
+filters.nodes.kind.value='agents';filters.nodes.kind.events.change();
+items=list.nodes['list-container'].querySelector('.list').children;if(items.length!==1 || shared.kind!=='agents')throw Error('filtro de agentes não sincronizado');
+items[0].children.at(-1).onclick();if(shared.selected!=='child' || shared.kind!=='agents' || vm.runInContext('selected',chat.ctx)!=='child')throw Error('seleção do agente limpou filtro ou não atualizou chat');
+filters.nodes.kind.value='all';filters.nodes.kind.events.change();
 filters.nodes.source.value='Codex';filters.nodes.source.events.change();
 items=list.nodes['list-container'].querySelector('.list').children;if(items.length!==1 || shared.source!=='Codex' || vm.runInContext('source.value',chat.ctx)!=='Codex')throw Error('filtro não sincronizado');
 filters.nodes.search.value='nada';filters.nodes.search.events.input();
-items=list.nodes['list-container'].querySelector('.list').children;if(items.length!==0 || shared.query!=='nada')throw Error('busca não sincronizada');
+items=list.nodes['list-container'].querySelector('.list').children;if(items.length!==1 || items[0].className!=='empty' || shared.query!=='nada')throw Error('busca não sincronizada');
 """
-    result = subprocess.run(["node", "-e", script, str(root / "media" / "view.js"), str(root / "media" / "format.js")], capture_output=True, text=True, check=False)
+    result = subprocess.run(["node", "-e", script, str(root / "media" / "view.js"), str(root / "media" / "format.js"), str(root / "media" / "tree.js")], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+
+
+def test_arvore_filtra_chats_agentes_e_vinculos_ausentes():
+    root = Path(__file__).resolve().parents[1]
+    script = r"""
+const {rows}=require(process.argv[1]);
+const sessions=[
+ {id:'chat',source:'Codex',events:[],children:[{id:'agente',role:'Revisor'}]},
+ {id:'agente',parent:'chat',source:'Codex',events:[],children:[{id:'sub',role:'Testador'}]},
+ {id:'sub',parent:'agente',source:'Codex',events:[{content:'procurado'}],children:[]},
+ {id:'orfao',parent:'ausente',source:'Codex',role:'Isolado',events:[],children:[]},
+ {id:'outro',source:'Claude',events:[],children:[]}
+];
+const ids=opts=>rows(sessions,{...opts,title:s=>s.id}).rows.map(r=>r.session.id).join(',');
+if(ids({})!=='chat,orfao,outro')throw Error('raízes recolhidas ou órfão ausente');
+if(ids({expanded:new Set(['chat','agente'])})!=='chat,agente,sub,orfao,outro')throw Error('hierarquia');
+if(ids({kind:'chats'})!=='chat,outro')throw Error('filtro chats');
+if(ids({kind:'agents',expanded:new Set(['agente'])})!=='agente,sub,orfao')throw Error('filtro agentes ou órfão');
+if(ids({kind:'agents'})!=='agente,orfao')throw Error('agentes recolhidos');
+if(ids({query:'procurado'})!=='chat,agente,sub')throw Error('busca deve revelar ancestrais');
+if(ids({source:'Claude'})!=='outro')throw Error('origem');
+const cycle=[{id:'x',source:'Codex',parent:'y',children:[],events:[]},{id:'y',source:'Codex',parent:'x',children:[],events:[]}];
+if(!rows(cycle,{}).rows.length)throw Error('ciclo ocultou todos os registros');
+"""
+    result = subprocess.run(["node", "-e", script, str(root / "media" / "tree.js")], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr

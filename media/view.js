@@ -5,6 +5,7 @@ const chatContainer = document.getElementById('chat-container');
 const status = document.getElementById('status');
 const search = document.getElementById('search');
 const source = document.getElementById('source');
+const kind = document.getElementById('kind');
 const notificationArea = document.getElementById('new-conversations');
 const separateViews = document.body?.classList.contains('mode-filters') || document.body?.classList.contains('mode-sessions') || document.body?.classList.contains('mode-chat');
 let sessions = [];
@@ -12,6 +13,7 @@ let selected = '';
 let query = '';
 let fingerprint = '';
 let unread = [];
+let expanded = new Set(Array.isArray(vscode.getState()?.expandedIds) ? vscode.getState().expandedIds : []);
 let listHeight = Number.isFinite(vscode.getState()?.listHeight) ? vscode.getState().listHeight : null;
 const sectionIds = ['filters-panel', 'conversations-panel', 'chat-panel'];
 for (const id of sectionIds) {
@@ -44,8 +46,7 @@ function render() {
   if (document.body?.classList.contains('mode-filters')) return;
   const listScroll = app.querySelector('.list')?.scrollTop || 0;
   const pageScroll = window.scrollY;
-  const parent = new Map();
-  for (const s of sessions) for (const c of s.children) parent.set(c.id, { id: s.id, role: c.role });
+  const parent = monitorTree.build(sessions).parent;
   const roots = sessions.filter(s => (!source.value || s.source === source.value) && !parent.has(s.id));
   if (!selected || !sessions.some(s => s.id === selected)) selected = roots[0]?.id || sessions[0]?.id || '';
   notificationArea.replaceChildren();
@@ -64,26 +65,30 @@ function render() {
   if (!sessions.length) { listContainer.append(el('p', 'Nenhuma conversa encontrada.', 'empty')); return; }
   const list = el('section', '', 'list');
   const map = new Map(sessions.map(s => [s.id, s]));
-  function addSession(s, label, depth, visited) {
-    if (visited.has(s.id)) return;
-    visited = new Set(visited); visited.add(s.id);
-    const haystack = `${title(s)} ${s.id} ${label} ${s.events.map(e => e.content || '').join(' ')}`.toLowerCase();
-    const descendants = s.children.map(c => map.get(c.id)).filter(Boolean);
-    if (!query || haystack.includes(query) || descendants.some(c => `${title(c)} ${c.id}`.toLowerCase().includes(query))) {
-      const button = el('button', '', 'session' + (s.id === selected ? ' selected' : ''));
-      const indent = Math.min(depth, 4) * 12;
-      button.style.marginLeft = `${indent}px`;
-      button.style.width = `calc(100% - ${indent}px)`;
-      const meta = el('small', '', 'session-meta');
-      meta.append(badge(s.source), document.createTextNode(` · ${new Date(s.modified).toLocaleString('pt-BR')} · ${monitorFormat.compactTokens(s.usage?.total)}`));
-      button.append(el('span', label || title(s)), meta);
-      if (s.models?.length) button.append(el('small', monitorFormat.modelLabels(s.models).join(' | '), 'session-models'));
-      button.onclick = () => openSession(s.id);
-      list.append(button);
-    }
-    for (const c of s.children) { const child = map.get(c.id); if (child) addSession(child, c.role, depth + 1, visited); }
+  const tree = monitorTree.rows(sessions, {kind:kind.value || 'all', source:source.value, query, expanded, title});
+  for (const entry of tree.rows) {
+    const s = entry.session;
+    const row = el('div', '', 'tree-row');
+    row.style.marginLeft = `${Math.min(entry.depth, 6) * 12}px`;
+    if (entry.hasChildren) {
+      const toggle = el('button', entry.expanded ? '▾' : '▸', 'tree-toggle');
+      toggle.setAttribute('aria-label', `${entry.expanded ? 'Recolher' : 'Expandir'} ${entry.role || title(s)}`);
+      toggle.setAttribute('aria-expanded', String(entry.expanded));
+      toggle.onclick = () => { if (expanded.has(s.id)) expanded.delete(s.id); else expanded.add(s.id); vscode.setState({...(vscode.getState() || {}), expandedIds:[...expanded]}); render(); };
+      row.append(toggle);
+    } else row.append(el('span', '', 'tree-spacer'));
+    const button = el('button', '', 'session' + (s.id === selected ? ' selected' : ''));
+    const meta = el('small', '', 'session-meta');
+    const category = entry.agent ? 'Agente' : 'Chat';
+    meta.append(badge(s.source), document.createTextNode(` · ${category} · ${new Date(s.modified).toLocaleString('pt-BR')} · ${monitorFormat.compactTokens(s.usage?.total)}`));
+    button.append(el('span', entry.role || title(s)), meta);
+    if (entry.agent && !map.has(entry.parentId)) button.append(el('small', 'Vínculo principal indisponível', 'session-models'));
+    if (entry.agent && kind.value === 'agents' && map.has(entry.parentId)) button.append(el('small', `Vinculado a: ${title(map.get(entry.parentId))}`, 'session-models'));
+    if (s.models?.length) button.append(el('small', monitorFormat.modelLabels(s.models).join(' | '), 'session-models'));
+    button.onclick = () => openSession(s.id);
+    row.append(button); list.append(row);
   }
-  for (const s of roots) addSession(s, '', 0, new Set());
+  if (!tree.rows.length) list.append(el('p', 'Nenhum registro corresponde aos filtros.', 'empty'));
   listContainer.append(list);
   if (!separateViews && listHeight !== null) applyListHeight(listHeight, false);
   const splitter = el('div', '', 'list-splitter');
@@ -176,21 +181,19 @@ function render() {
 }
 function openSession(id) {
   selected = id;
-  source.value = '';
-  search.value = '';
-  query = '';
-  vscode.postMessage({type:'uiState', source:'', query:'', selected:id});
+  vscode.postMessage({type:'uiState', selected:id});
   if (unread.includes(id)) { unread = unread.filter(item => item !== id); vscode.postMessage({ type: 'read', id }); }
   render();
 }
 search.addEventListener('input', () => { query = search.value.toLowerCase().trim(); vscode.postMessage({type:'uiState', query:search.value}); render(); });
 source.addEventListener('change', () => { selected = ''; vscode.postMessage({type:'uiState', source:source.value, selected:''}); render(); });
+kind.addEventListener('change', () => { vscode.postMessage({type:'uiState', kind:kind.value}); render(); });
 document.getElementById('refresh').onclick = () => vscode.postMessage({ type: 'refresh' });
 window.addEventListener('message', ({ data }) => {
   if (data.type === 'uiState') {
-    const nextSource = data.source || '', nextQuery = data.query || '', nextSelected = data.selected || '';
-    if (source.value !== nextSource || search.value !== nextQuery || selected !== nextSelected) {
-      source.value = nextSource; search.value = nextQuery; query = nextQuery.toLowerCase().trim(); selected = nextSelected; render();
+    const nextSource = data.source || '', nextQuery = data.query || '', nextSelected = data.selected || '', nextKind = ['all','chats','agents'].includes(data.kind) ? data.kind : 'all';
+    if (source.value !== nextSource || search.value !== nextQuery || selected !== nextSelected || kind.value !== nextKind) {
+      source.value = nextSource; search.value = nextQuery; kind.value = nextKind; query = nextQuery.toLowerCase().trim(); selected = nextSelected; render();
     }
     return;
   }

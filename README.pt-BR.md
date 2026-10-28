@@ -20,6 +20,7 @@ Como alternativa, execute `code --install-extension caminho/do/arquivo.vsix` em 
 ## Uso
 
 - Use as quatro visualizações **Filtros**, **Conversas encontradas**, **Chat** e **Conversas (modo nativo)**. No menu **...** do Monitor de Agentes, marque ou desmarque cada visualização para mostrá-la ou ocultá-la; também é possível recolher os cabeçalhos e arrastar os divisores do VS Code para ajustar suas alturas. Filtros e seleção de conversa são sincronizados entre as visualizações.
+- Em **Filtros**, escolha todos os registros, somente chats ou somente agentes. Em **Conversas encontradas**, use as setas para expandir os agentes e subagentes ligados a cada chat. A busca revela os ancestrais dos resultados. Agentes cujo registro principal não estiver disponível são identificados como vínculo indisponível; não são criados vínculos por suposição. O filtro de tipo afeta a lista **Conversas encontradas**; o modo nativo continua independente.
 - Filtre conversas por origem e escolha o agente ou subagente para ler suas mensagens.
 - Pedidos e mensagens recebidas aparecem à direita; respostas e mensagens enviadas pelo agente selecionado, à esquerda. Cada origem tem sua cor e etiqueta.
 - Quando os dados estão disponíveis, o painel exibe tokens registrados por agente, incluindo entrada, saída e cache conforme a origem. Não é uma fatura, estimativa de custo ou medição garantida de consumo total; cache e raciocínio podem ter regras diferentes entre fontes. Não some valores de agentes sem verificar se as métricas se sobrepõem.

@@ -24,6 +24,10 @@ input,select{box-sizing:border-box;width:100%;padding:7px;margin-bottom:5px;colo
 .list-splitter:hover:after,.list-splitter:focus-visible:after{background:var(--vscode-focusBorder);opacity:1}
 .list-splitter:focus-visible{outline:1px solid var(--vscode-focusBorder)}
 .session{display:block;text-align:left;padding:7px;width:calc(100% - 2px);border-radius:3px}
+.tree-row{display:flex;align-items:flex-start;min-width:0}
+.tree-row .session{flex:1;min-width:0;width:auto}
+.tree-toggle,.tree-spacer{flex:0 0 20px;width:20px;padding:7px 2px;text-align:center}
+.tree-toggle:focus-visible{outline:1px solid var(--vscode-focusBorder)}
 .session:hover{background:var(--vscode-list-hoverBackground)}
 .session.selected{background:var(--vscode-list-activeSelectionBackground);color:var(--vscode-list-activeSelectionForeground)}
 .session span,.session small{display:block;overflow:hidden;text-overflow:ellipsis}

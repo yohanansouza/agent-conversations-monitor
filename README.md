@@ -20,6 +20,7 @@ Alternatively, run `code --install-extension path/to/file.vsix`. Updates from Gi
 ## Features
 
 - Use the four independent **Filtros**, **Conversas encontradas**, **Chat**, and **Conversas (modo nativo)** views. The VS Code **...** menu shows or hides each view, and the view dividers resize them. Filters and conversation selection are synchronized between views.
+- Filter the conversation list to show all records, chats only, or agents only. Expand chats and agents to browse recorded child relationships; search reveals matching descendants and their ancestors. Agents whose parent record is unavailable are identified without inventing a connection. The type filter applies to the conversation list; the native view remains independent.
 - Filter sessions by provider, browse agent and subagent relationships, and read messages with Markdown formatting.
 - New conversations produce clickable notices in the panel and status bar. New messages within an existing session do not trigger notices.
 - Where records contain usage data, show per-agent input, output, cache and total tokens. These are recorded values, not a bill or guaranteed account-wide total; cache and reasoning conventions differ by provider. Agent totals may overlap.
