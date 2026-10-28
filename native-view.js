@@ -19,6 +19,7 @@ function conversationText(session, sessions) {
     const num = n => Number.isFinite(n) ? n.toLocaleString('pt-BR') : 'indisponível';
     lines.push(`Tokens registrados: total ${num(u.total)} · entrada ${num(u.input)} · saída ${num(u.output)}`);
     if (Number.isFinite(u.cacheRead)) lines.push(`Leitura em cache: ${num(u.cacheRead)}`);
+    else if (session.source === 'Antigravity') lines.push('Leitura em cache: indisponível');
     if (Number.isFinite(u.cacheWrite)) lines.push(`Criação de cache: ${num(u.cacheWrite)}`);
     if (u.label) lines.push(u.label);
   } else lines.push('Tokens: indisponível nos registros deste agente.');

@@ -248,3 +248,45 @@ const child={id:'codex:c',parent:'codex:p',source:'Codex',role:'Revisor',events:
 """
     result = subprocess.run(["node", "-e", script, str(root / "native-view.js")], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
+
+
+def test_antigravity_distingue_cache_ausente_zero_e_parcial(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    script = r"""
+const fs=require('fs'),path=require('path');const {collectSessions}=require(process.argv[1]);
+const root=process.argv[2];
+function session(id,entries){const dir=path.join(root,id,'.system_generated','logs');fs.mkdirSync(dir,{recursive:true});fs.writeFileSync(path.join(dir,'transcript.jsonl'),entries.map(JSON.stringify).join('\n')+'\n');}
+session('00000000-0000-0000-0000-000000000001',[{input_tokens:10,output_tokens:2}]);
+session('00000000-0000-0000-0000-000000000002',[{input_tokens:10,output_tokens:2,cache_read_tokens:0}]);
+session('00000000-0000-0000-0000-000000000003',[{input_tokens:10,output_tokens:2,cache_read_tokens:4},{input_tokens:5,output_tokens:1}]);
+session('00000000-0000-0000-0000-000000000004',[{type:'USER_INPUT',content:'teste'}]);
+(async()=>{const r=await collectSessions(root);const find=n=>r.sessions.find(s=>s.id.endsWith(n)).usage;
+ if(find('1').cacheRead!==null || find('2').cacheRead!==0 || find('3').cacheRead!==4 || !find('3').label.includes('parcial') || find('4')!==null) throw Error('contagem de cache ou ausência incorreta');
+})().catch(e=>{console.error(e);process.exit(1)});
+"""
+    result = subprocess.run(["node", "-e", script, str(root / "sessions.js"), str(tmp_path)], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+
+
+def test_divisor_mantem_altura_apos_atualizacao():
+    root = Path(__file__).resolve().parents[1]
+    script = r"""
+const vm=require('vm'),fs=require('fs');let saved=null;const listeners={};
+class Element {constructor(tag){this.tag=tag;this.children=[];this.events={};this.style={};this.value='';this.scrollTop=0;this.attrs={};} append(...xs){this.children.push(...xs)} replaceChildren(){this.children=[]} addEventListener(n,f){this.events[n]=f} setAttribute(k,v){this.attrs[k]=v} getBoundingClientRect(){return {height:parseFloat(this.style.height)||150}} querySelector(selector){return this.children.find(x=>selector==='.'+x.className)||null}}
+const nodes={};for(const id of ['app','status','search','source','new-conversations','refresh'])nodes[id]=new Element('div');
+const doc={getElementById:id=>nodes[id],createElement:tag=>new Element(tag),createTextNode:text=>({textContent:text})};
+const api={getState:()=>saved,setState:x=>{saved=x},postMessage:()=>{}};
+const win={innerHeight:800,scrollY:0,scrollTo:()=>{},addEventListener:(n,f)=>listeners[n]=f,removeEventListener:(n,f)=>{if(listeners[n]===f)delete listeners[n]}};
+const ctx={document:doc,window:win,acquireVsCodeApi:()=>api,monitorFormat:require(process.argv[2]),monitorMarkdown:{render:()=>new Element('p')},marked:{},Intl,Date,Number,Map,Set};
+vm.runInNewContext(fs.readFileSync(process.argv[1],'utf8'),ctx);
+const data={type:'sessions',sessions:[{id:'a',source:'Codex',modified:Date.now(),events:[],children:[],usage:null}],unread:[]};
+listeners.message({data});
+let splitter=nodes.app.querySelector('.list-splitter');if(!splitter || splitter.attrs.role!=='separator')throw Error('divisor ausente');
+splitter.events.pointerdown({button:0,clientY:200,preventDefault(){}});listeners.pointermove({clientY:300});listeners.pointerup();
+if(saved.listHeight!==250 || nodes.app.querySelector('.list').style.height!=='250px')throw Error('arraste não persistiu');
+data.sessions[0].modified++;listeners.message({data});if(nodes.app.querySelector('.list').style.height!=='250px')throw Error('altura perdida ao atualizar');
+splitter=nodes.app.querySelector('.list-splitter');splitter.events.keydown({key:'ArrowUp',preventDefault(){}});
+if(saved.listHeight!==230)throw Error('ajuste pelo teclado falhou');
+"""
+    result = subprocess.run(["node", "-e", script, str(root / "media" / "view.js"), str(root / "media" / "format.js")], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr

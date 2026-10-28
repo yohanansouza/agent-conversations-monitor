@@ -9,6 +9,13 @@ let selected = '';
 let query = '';
 let fingerprint = '';
 let unread = [];
+let listHeight = Number.isFinite(vscode.getState()?.listHeight) ? vscode.getState().listHeight : null;
+function applyListHeight(height, persist = true) {
+  listHeight = Math.max(70, Math.min(Math.max(70, window.innerHeight - 120), height));
+  const list = app.querySelector('.list');
+  if (list) { list.style.height = `${listHeight}px`; list.style.maxHeight = 'none'; }
+  if (persist) vscode.setState({ ...(vscode.getState() || {}), listHeight });
+}
 const el = (tag, text, cls) => { const n = document.createElement(tag); if (text) n.textContent = text; if (cls) n.className = cls; return n; };
 const sourceClass = name => ({Codex:'codex',Antigravity:'antigravity',Claude:'claude',Grok:'grok'}[name] || 'codex');
 const badge = name => el('span', name, `badge ${sourceClass(name)}`);
@@ -63,6 +70,27 @@ function render() {
   }
   for (const s of roots) addSession(s, '', 0, new Set());
   app.append(list);
+  if (listHeight !== null) applyListHeight(listHeight, false);
+  const splitter = el('div', '', 'list-splitter');
+  splitter.setAttribute('role', 'separator');
+  splitter.setAttribute('aria-label', 'Ajustar altura da lista de conversas');
+  splitter.setAttribute('aria-orientation', 'horizontal');
+  splitter.setAttribute('tabindex', '0');
+  splitter.title = 'Arraste para ajustar a altura da lista. Use as setas para cima e para baixo pelo teclado.';
+  splitter.addEventListener('pointerdown', event => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    const startY = event.clientY, startHeight = list.getBoundingClientRect().height;
+    const move = e => applyListHeight(startHeight + e.clientY - startY, false);
+    const stop = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', stop); window.removeEventListener('pointercancel', stop); if (listHeight !== null) applyListHeight(listHeight); };
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', stop); window.addEventListener('pointercancel', stop);
+  });
+  splitter.addEventListener('keydown', event => {
+    if (!['ArrowUp', 'ArrowDown'].includes(event.key)) return;
+    event.preventDefault();
+    applyListHeight(list.getBoundingClientRect().height + (event.key === 'ArrowDown' ? 20 : -20));
+  });
+  app.append(splitter);
   const current = map.get(selected);
   if (!current) return;
   const detail = el('section', '', `detail ${sourceClass(current.source)}`);
@@ -74,6 +102,7 @@ function render() {
     const u = current.usage; const fmt = n => Number.isFinite(n) ? n.toLocaleString('pt-BR') : 'indisponível';
     const parts = [`Total: ${fmt(u.total)}`, `Entrada: ${fmt(u.input)}`, `Saída: ${fmt(u.output)}`];
     if (Number.isFinite(u.cacheRead)) parts.push(`Leitura em cache: ${fmt(u.cacheRead)}`);
+    else if (current.source === 'Antigravity') parts.push('Leitura em cache: indisponível');
     if (Number.isFinite(u.cacheWrite)) parts.push(`Criação de cache: ${fmt(u.cacheWrite)}`);
     const box = el('div', '', 'usage'); box.append(el('strong', 'Tokens registrados'), el('p', parts.join(' · ')), el('small', u.label)); detail.append(box);
   } else detail.append(el('p', 'Tokens: indisponível nos registros deste agente.', 'hint'));

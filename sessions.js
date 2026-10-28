@@ -22,8 +22,10 @@ async function collectSessions(brain) {
     const records = events.filter(e => Number.isFinite(e.input_tokens) && Number.isFinite(e.output_tokens));
     let usage = null;
     if (records.length) {
-      usage = {input:0,output:0,cacheRead:0,label:'Soma dos registros disponíveis; entrada pode incluir cache.'};
-      for (const e of records) { usage.input += e.input_tokens; usage.output += e.output_tokens; usage.cacheRead += Number.isFinite(e.cache_read_tokens) ? e.cache_read_tokens : 0; }
+      const cached = records.filter(e => Number.isFinite(e.cache_read_tokens) && e.cache_read_tokens >= 0);
+      usage = {input:0,output:0,cacheRead:cached.length ? 0 : null,label:cached.length && cached.length < records.length ? 'Soma dos registros disponíveis; cache parcial; entrada pode incluir cache.' : 'Soma dos registros disponíveis; entrada pode incluir cache.'};
+      for (const e of records) { usage.input += e.input_tokens; usage.output += e.output_tokens; }
+      for (const e of cached) usage.cacheRead += e.cache_read_tokens;
       usage.total = usage.input + usage.output;
     }
     return { id: d.name, modified: stat.mtimeMs, events, children, usage };
