@@ -9,7 +9,7 @@ const { NativeView } = require('./native-view');
 
 class Monitor {
   constructor(context) {
-    this.context = context; this.view = null; this.timer = null; this.running = false;
+    this.context = context; this.views = new Map(); this.uiState = {source:'', query:'', selected:''}; this.timer = null; this.running = false;
     this.codex = new CodexReader(); this.notifications = new Notifications();
     this.native = new NativeView(id => { this.notifications.read(id); this.updateStatus(); this.refresh(); });
     this.statusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 50);
@@ -17,8 +17,8 @@ class Monitor {
     this.statusItem.tooltip = 'Abrir novas conversas no Monitor de agentes';
     context.subscriptions.push(this.statusItem);
   }
-  resolveWebviewView(view) {
-    this.view = view;
+  resolveWebviewView(view, mode = 'chat') {
+    this.views.set(mode, view);
     view.webview.options = { enableScripts: true, localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'media')] };
     const script = view.webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'view.js'));
     const formatScript = view.webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'format.js'));
@@ -26,15 +26,21 @@ class Monitor {
     const markdownScript = view.webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'markdown.js'));
     const style = view.webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'view.css'));
     const nonce = require('crypto').randomBytes(16).toString('hex');
-    view.webview.html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${view.webview.cspSource}; script-src 'nonce-${nonce}';"><link rel="stylesheet" href="${style}"></head><body><details id="filters-panel" class="panel-section" open><summary>Filtros</summary><div class="panel-content"><header><strong>Monitor de Agentes</strong><button id="refresh" title="Atualizar agora" aria-label="Atualizar agora">↻</button></header><p class="hint">Codex · Antigravity CLI · Claude Code · Grok Build</p><select id="source" aria-label="Filtrar por origem"><option value="">Todas as origens</option><option value="Codex">Codex</option><option value="Antigravity">Antigravity</option><option value="Claude">Claude</option><option value="Grok">Grok</option></select><input id="search" placeholder="Filtrar conversas e agentes" aria-label="Filtrar conversas"></div></details><div id="new-conversations" aria-live="polite"></div><div id="app"><details id="conversations-panel" class="panel-section" open><summary>Conversas encontradas</summary><div id="status" role="status">Carregando…</div><div id="list-container"></div></details><details id="chat-panel" class="panel-section" open><summary>Chat</summary><div id="chat-container"></div></details></div><script nonce="${nonce}" src="${formatScript}"></script><script nonce="${nonce}" src="${markedScript}"></script><script nonce="${nonce}" src="${markdownScript}"></script><script nonce="${nonce}" src="${script}"></script></body></html>`;
+    view.webview.html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${view.webview.cspSource}; script-src 'nonce-${nonce}';"><link rel="stylesheet" href="${style}"></head><body class="mode-${mode}"><details id="filters-panel" class="panel-section" open><summary>Filtros</summary><div class="panel-content"><header><strong>Monitor de Agentes</strong><button id="refresh" title="Atualizar agora" aria-label="Atualizar agora">↻</button></header><p class="hint">Codex · Antigravity CLI · Claude Code · Grok Build</p><select id="source" aria-label="Filtrar por origem"><option value="">Todas as origens</option><option value="Codex">Codex</option><option value="Antigravity">Antigravity</option><option value="Claude">Claude</option><option value="Grok">Grok</option></select><input id="search" placeholder="Filtrar conversas e agentes" aria-label="Filtrar conversas"></div></details><div id="new-conversations" aria-live="polite"></div><div id="app"><details id="conversations-panel" class="panel-section" open><summary>Conversas encontradas</summary><div id="status" role="status">Carregando…</div><div id="list-container"></div></details><details id="chat-panel" class="panel-section" open><summary>Chat</summary><div id="chat-container"></div></details></div><script nonce="${nonce}" src="${formatScript}"></script><script nonce="${nonce}" src="${markedScript}"></script><script nonce="${nonce}" src="${markdownScript}"></script><script nonce="${nonce}" src="${script}"></script></body></html>`;
     view.webview.onDidReceiveMessage(message => {
       if (message.type === 'refresh') this.refresh();
       if (message.type === 'read' && typeof message.id === 'string') { this.notifications.read(message.id); this.updateStatus(); this.refresh(); }
+      if (message.type === 'ready') { view.webview.postMessage({type:'uiState', ...this.uiState}); if (this.lastMessage) view.webview.postMessage(this.lastMessage); this.refresh(); }
+      if (message.type === 'uiState') {
+        for (const key of ['source', 'query', 'selected']) if (typeof message[key] === 'string') this.uiState[key] = message[key];
+        this.broadcast({type:'uiState', ...this.uiState});
+      }
     }, null, this.context.subscriptions);
     view.onDidChangeVisibility(() => { if (view.visible) this.refresh(); });
-    view.onDidDispose(() => { this.view = null; });
+    view.onDidDispose(() => { if (this.views.get(mode) === view) this.views.delete(mode); });
     this.refresh();
   }
+  broadcast(message) { for (const view of this.views.values()) view.webview.postMessage(message); }
   start() {
     this.stop();
     const seconds = Math.max(1, Math.min(60, vscode.workspace.getConfiguration('antigravityMonitor').get('refreshSeconds', 3)));
@@ -69,15 +75,18 @@ class Monitor {
       sessions.sort((a, b) => b.modified - a.modified);
       this.updateStatus();
       this.native.update(sessions, this.notifications.list(), warnings.join(' · '));
-      this.view?.webview.postMessage({ type: 'sessions', sessions, unread: this.notifications.list(), warning: warnings.join(' · ') });
-    } catch (error) { this.view?.webview.postMessage({ type: 'error', message: error.message }); }
+      this.lastMessage = { type: 'sessions', sessions, unread: this.notifications.list(), warning: warnings.join(' · ') };
+      this.broadcast(this.lastMessage);
+    } catch (error) { this.broadcast({ type: 'error', message: error.message }); }
     finally { this.running = false; }
   }
 }
 
 function activate(context) {
   const monitor = new Monitor(context);
-  context.subscriptions.push(vscode.window.registerWebviewViewProvider('antigravityMonitor.view', monitor));
+  for (const [id, mode] of [['antigravityMonitor.filters','filters'],['antigravityMonitor.sessions','sessions'],['antigravityMonitor.view','chat']]) {
+    context.subscriptions.push(vscode.window.registerWebviewViewProvider(id, {resolveWebviewView: view => monitor.resolveWebviewView(view, mode)}));
+  }
   context.subscriptions.push(vscode.window.registerTreeDataProvider('antigravityMonitor.native', monitor.native));
   context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider('agent-monitor', monitor.native));
   context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(doc => monitor.native.close(doc.uri)));

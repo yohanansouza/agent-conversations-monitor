@@ -6,6 +6,10 @@ button{cursor:pointer;color:inherit;background:transparent;border:0}
 .panel-section>summary:hover{color:var(--vscode-textLink-foreground)}
 .panel-section>summary:focus-visible{outline:1px solid var(--vscode-focusBorder)}
 .panel-content{padding:0 2px 5px}
+body.mode-filters #app,body.mode-filters #new-conversations,body.mode-sessions #filters-panel,body.mode-sessions #chat-panel,body.mode-chat #filters-panel,body.mode-chat #conversations-panel,body.mode-chat #new-conversations{display:none}
+body.mode-filters .panel-section>summary,body.mode-sessions .panel-section>summary,body.mode-chat .panel-section>summary{display:none}
+body.mode-filters .panel-section,body.mode-sessions .panel-section,body.mode-chat .panel-section{border:0;margin:0}
+body.mode-sessions .list{max-height:none;overflow:visible;border:0}
 #refresh{font-size:20px}
 input,select{box-sizing:border-box;width:100%;padding:7px;margin-bottom:5px;color:var(--vscode-input-foreground);background:var(--vscode-input-background);border:1px solid var(--vscode-input-border,transparent)}
 .hint,#status,.id,.empty{color:var(--vscode-descriptionForeground);font-size:.9em}

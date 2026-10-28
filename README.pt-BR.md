@@ -19,12 +19,11 @@ Como alternativa, execute `code --install-extension caminho/do/arquivo.vsix` em 
 
 ## Uso
 
-- Na visualização **Conversas**, clique nos títulos **Filtros**, **Conversas encontradas** e **Chat** para recolher ou reabrir cada seção. A escolha é preservada entre atualizações. A visualização separada **Conversas (modo nativo)** pode ser recolhida ou ocultada pelo menu de visualizações do VS Code.
+- Use as quatro visualizações **Filtros**, **Conversas encontradas**, **Chat** e **Conversas (modo nativo)**. No menu **...** do Monitor de Agentes, marque ou desmarque cada visualização para mostrá-la ou ocultá-la; também é possível recolher os cabeçalhos e arrastar os divisores do VS Code para ajustar suas alturas. Filtros e seleção de conversa são sincronizados entre as visualizações.
 - Filtre conversas por origem e escolha o agente ou subagente para ler suas mensagens.
 - Pedidos e mensagens recebidas aparecem à direita; respostas e mensagens enviadas pelo agente selecionado, à esquerda. Cada origem tem sua cor e etiqueta.
 - Quando os dados estão disponíveis, o painel exibe tokens registrados por agente, incluindo entrada, saída e cache conforme a origem. Não é uma fatura, estimativa de custo ou medição garantida de consumo total; cache e raciocínio podem ter regras diferentes entre fontes. Não some valores de agentes sem verificar se as métricas se sobrepõem.
 - A lista resume o total de tokens; o quadro **Tokens registrados** mantém os valores detalhados. O painel identifica modelos e níveis de esforço encontrados nos registros, inclusive diferentes combinações na mesma sessão. Quando algum campo não é registrado, aparece como indisponível; os dados históricos podem ser incompletos.
-- Arraste a barra entre a lista e o chat para ajustar a altura da lista. Ela também aceita as setas para cima e para baixo quando focada pelo teclado; a altura escolhida é preservada nas atualizações do painel.
 - No Antigravity CLI, os totais são somados apenas dos registros que trazem entrada e saída. Cache zero é diferente de cache indisponível; se apenas parte dos registros informa cache, o valor é identificado como parcial. O modelo e o esforço só são mostrados se a origem os registrar.
 - Mensagens são apresentadas com Markdown. Chamadas estruturadas são formatadas para leitura, com o registro disponível em **Detalhes técnicos**.
 - O monitor atualiza os registros a cada três segundos. Novas conversas ou subagentes geram avisos clicáveis no painel e na barra de status; mensagens novas em conversas existentes não geram avisos.

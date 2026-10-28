@@ -6,6 +6,7 @@ const status = document.getElementById('status');
 const search = document.getElementById('search');
 const source = document.getElementById('source');
 const notificationArea = document.getElementById('new-conversations');
+const separateViews = document.body?.classList.contains('mode-filters') || document.body?.classList.contains('mode-sessions') || document.body?.classList.contains('mode-chat');
 let sessions = [];
 let selected = '';
 let query = '';
@@ -16,10 +17,10 @@ const sectionIds = ['filters-panel', 'conversations-panel', 'chat-panel'];
 for (const id of sectionIds) {
   const section = document.getElementById(id);
   const stored = vscode.getState()?.sections?.[id];
-  if (typeof stored === 'boolean') section.open = stored;
+  if (!separateViews && typeof stored === 'boolean') section.open = stored;
   section.addEventListener('toggle', () => {
     const state = vscode.getState() || {};
-    if (state.sections?.[id] === section.open) return;
+    if (separateViews || state.sections?.[id] === section.open) return;
     vscode.setState({ ...state, sections: { ...(state.sections || {}), [id]: section.open } });
   });
 }
@@ -40,6 +41,7 @@ function title(session) {
   return event ? clean(event.content).replace(/\s+/g, ' ').slice(0, 110) : `Conversa ${session.id.slice(0, 8)}`;
 }
 function render() {
+  if (document.body?.classList.contains('mode-filters')) return;
   const listScroll = app.querySelector('.list')?.scrollTop || 0;
   const pageScroll = window.scrollY;
   const parent = new Map();
@@ -83,7 +85,7 @@ function render() {
   }
   for (const s of roots) addSession(s, '', 0, new Set());
   listContainer.append(list);
-  if (listHeight !== null) applyListHeight(listHeight, false);
+  if (!separateViews && listHeight !== null) applyListHeight(listHeight, false);
   const splitter = el('div', '', 'list-splitter');
   splitter.setAttribute('role', 'separator');
   splitter.setAttribute('aria-label', 'Ajustar altura da lista de conversas');
@@ -103,7 +105,8 @@ function render() {
     event.preventDefault();
     applyListHeight(list.getBoundingClientRect().height + (event.key === 'ArrowDown' ? 20 : -20));
   });
-  listContainer.append(splitter);
+  if (!separateViews) listContainer.append(splitter);
+  if (document.body?.classList.contains('mode-sessions')) { list.scrollTop = listScroll; return; }
   const current = map.get(selected);
   if (!current) return;
   const detail = el('section', '', `detail ${sourceClass(current.source)}`);
@@ -176,16 +179,25 @@ function openSession(id) {
   source.value = '';
   search.value = '';
   query = '';
+  vscode.postMessage({type:'uiState', source:'', query:'', selected:id});
   if (unread.includes(id)) { unread = unread.filter(item => item !== id); vscode.postMessage({ type: 'read', id }); }
   render();
 }
-search.addEventListener('input', () => { query = search.value.toLowerCase().trim(); render(); });
-source.addEventListener('change', () => { selected = ''; render(); });
+search.addEventListener('input', () => { query = search.value.toLowerCase().trim(); vscode.postMessage({type:'uiState', query:search.value}); render(); });
+source.addEventListener('change', () => { selected = ''; vscode.postMessage({type:'uiState', source:source.value, selected:''}); render(); });
 document.getElementById('refresh').onclick = () => vscode.postMessage({ type: 'refresh' });
 window.addEventListener('message', ({ data }) => {
+  if (data.type === 'uiState') {
+    const nextSource = data.source || '', nextQuery = data.query || '', nextSelected = data.selected || '';
+    if (source.value !== nextSource || search.value !== nextQuery || selected !== nextSelected) {
+      source.value = nextSource; search.value = nextQuery; query = nextQuery.toLowerCase().trim(); selected = nextSelected; render();
+    }
+    return;
+  }
   if (data.type === 'error') { status.textContent = `Erro ao ler registros: ${data.message}`; return; }
   if (data.type !== 'sessions') return;
   status.textContent = data.warning || `${data.sessions.length} conversas encontradas · atualizado às ${new Date().toLocaleTimeString('pt-BR')}`;
   const next = JSON.stringify([data.sessions, data.unread]);
   if (fingerprint !== next) { fingerprint = next; sessions = data.sessions; unread = data.unread || []; render(); }
 });
+vscode.postMessage({type:'ready'});

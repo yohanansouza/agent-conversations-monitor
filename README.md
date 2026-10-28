@@ -19,12 +19,11 @@ Alternatively, run `code --install-extension path/to/file.vsix`. Updates from Gi
 
 ## Features
 
-- In the **Conversas** view, expand or collapse **Filtros**, **Conversas encontradas** and **Chat** independently; their state is retained across updates. The separate **Conversas (modo nativo)** view can be collapsed or hidden using VS Code's view menu.
+- Use the four independent **Filtros**, **Conversas encontradas**, **Chat**, and **Conversas (modo nativo)** views. The VS Code **...** menu shows or hides each view, and the view dividers resize them. Filters and conversation selection are synchronized between views.
 - Filter sessions by provider, browse agent and subagent relationships, and read messages with Markdown formatting.
 - New conversations produce clickable notices in the panel and status bar. New messages within an existing session do not trigger notices.
 - Where records contain usage data, show per-agent input, output, cache and total tokens. These are recorded values, not a bill or guaranteed account-wide total; cache and reasoning conventions differ by provider. Agent totals may overlap.
 - The conversation list shows a compact token total while the detailed usage panel remains available. Recorded model and reasoning-effort combinations are shown per session where available; absent fields are marked unavailable and historical records may be incomplete.
-- Drag the separator between the conversation list and chat to resize the list. When focused, the separator also accepts the up and down arrow keys. The chosen height persists across panel refreshes.
 - Antigravity CLI totals sum only entries that record input and output; zero cache differs from unavailable cache, and partially recorded cache is labelled as partial. Model and effort are shown only when recorded by the source.
 - Protected content and recognized encoded tokens are hidden behind an explanatory notice; original records remain in **Detalhes técnicos**. The monitor does not decrypt them.
 - **Native fallback:** Open **Conversas (modo nativo)** in the activity bar, or run **Monitor de Agentes: Abrir visualização nativa** from the command palette. Select a conversation to read it in a read-only native editor and expand agents to browse subagents. Messages and available token counts refresh from the local records, and new conversations are marked in the list. This view does not rely on the chat webview, displays plain text (Markdown syntax may remain visible), and does not show the original technical details. It cannot fix webview errors in other extensions and does not automatically restart VS Code.

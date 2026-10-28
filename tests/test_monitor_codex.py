@@ -297,3 +297,30 @@ if(!saved.sections['chat-panel'] || saved.sections['filters-panel']!==false)thro
 """
     result = subprocess.run(["node", "-e", script, str(root / "media" / "view.js"), str(root / "media" / "format.js")], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
+
+
+def test_visualizacoes_sincronizam_filtros_e_selecao():
+    root = Path(__file__).resolve().parents[1]
+    script = r"""
+const vm=require('vm'),fs=require('fs');const contexts=[];let shared={source:'',query:'',selected:''};
+class Element {constructor(tag){this.tag=tag;this.children=[];this.events={};this.style={};this.value='';this.scrollTop=0;this.open=true;this.className=''} append(...xs){this.children.push(...xs)} replaceChildren(){this.children=[]} addEventListener(n,f){this.events[n]=f} setAttribute(){} getBoundingClientRect(){return {height:150}} querySelector(selector){for(const child of this.children){if(selector==='.'+child.className)return child;const result=child.querySelector?.(selector);if(result)return result;}return null}}
+const raw=fs.readFileSync(process.argv[1],'utf8');
+function create(mode){
+ const nodes={};for(const id of ['app','status','search','source','new-conversations','refresh','list-container','chat-container','filters-panel','conversations-panel','chat-panel'])nodes[id]=new Element('div');nodes.app.append(nodes['list-container'],nodes['chat-container']);
+ const handlers={};const doc={body:{classList:{contains:name=>name==='mode-'+mode}},getElementById:id=>nodes[id],createElement:tag=>new Element(tag),createTextNode:text=>({textContent:text})};
+ const api={getState:()=>null,setState:()=>{},postMessage:message=>{if(message.type==='uiState'){for(const key of ['source','query','selected'])if(typeof message[key]==='string')shared[key]=message[key];for(const c of contexts)c.handlers.message({data:{type:'uiState',...shared}});}}};
+ const win={innerHeight:800,scrollY:0,scrollTo:()=>{},addEventListener:(n,f)=>handlers[n]=f,removeEventListener:()=>{}};
+ const ctx=vm.createContext({document:doc,window:win,acquireVsCodeApi:()=>api,monitorFormat:require(process.argv[2]),monitorMarkdown:{render:()=>new Element('p')},marked:{},Intl,Date,Number,Map,Set});vm.runInContext(raw,ctx);const c={nodes,handlers,ctx};contexts.push(c);return c;
+}
+const filters=create('filters'),list=create('sessions'),chat=create('chat');
+const data={type:'sessions',sessions:[{id:'a',source:'Codex',modified:1,events:[{type:'USER_INPUT',content:'Primeira'}],children:[]},{id:'b',source:'Claude',modified:2,events:[{type:'USER_INPUT',content:'Segunda'}],children:[]}],unread:[]};
+for(const c of contexts)c.handlers.message({data});
+let items=list.nodes['list-container'].querySelector('.list').children;if(items.length!==2)throw Error('lista inicial');items[1].onclick();
+if(shared.selected!=='b' || vm.runInContext('selected',chat.ctx)!=='b')throw Error('chat não acompanhou seleção');
+filters.nodes.source.value='Codex';filters.nodes.source.events.change();
+items=list.nodes['list-container'].querySelector('.list').children;if(items.length!==1 || shared.source!=='Codex' || vm.runInContext('source.value',chat.ctx)!=='Codex')throw Error('filtro não sincronizado');
+filters.nodes.search.value='nada';filters.nodes.search.events.input();
+items=list.nodes['list-container'].querySelector('.list').children;if(items.length!==0 || shared.query!=='nada')throw Error('busca não sincronizada');
+"""
+    result = subprocess.run(["node", "-e", script, str(root / "media" / "view.js"), str(root / "media" / "format.js")], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
