@@ -199,3 +199,31 @@ new CodexReader().collect(process.argv[2]).then(r=>{if(r.sessions[0].usage.total
 """
     result = subprocess.run(["node", "-e", script, str(root / "codex-sessions.js"), str(tmp_path)], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
+
+
+def test_visualizacao_nativa_leitura_atualizacao_e_hierarquia():
+    root = Path(__file__).resolve().parents[1]
+    script = r"""
+const Module=require('module'); const original=Module._load;
+class Emitter { constructor(){this.calls=[];this.event=()=>{};} fire(value){this.calls.push(value);} dispose(){} }
+const mock={EventEmitter:Emitter,TreeItem:class{constructor(label,state){this.label=label;this.collapsibleState=state}},TreeItemCollapsibleState:{None:0,Collapsed:1},ThemeIcon:class{constructor(id){this.id=id}},Uri:{from:o=>o},workspace:{openTextDocument:async uri=>({uri})},window:{showTextDocument:async()=>{}}};
+Module._load=function(name,...rest){return name==='vscode'?mock:original.call(this,name,...rest)};
+const {NativeView,conversationText}=require(process.argv[1]);
+const secret='gAAAAA'+'a'.repeat(120)+'==';
+const parent={id:'codex:p',source:'Codex',events:[{type:'USER_INPUT',content:'Olá'},{type:'CODEX_CALL',name:'send_message',args:{message:secret,target:'c'}}],children:[{id:'codex:c',role:'Revisor'}],usage:{total:7,input:5,output:2,label:'registrado'}};
+const child={id:'codex:c',parent:'codex:p',source:'Codex',role:'Revisor',events:[{type:'PLANNER_RESPONSE',content:'Resposta'}],children:[]};
+(async()=>{
+ let selected='';const view=new NativeView(id=>selected=id);
+ view.update([parent,child],['codex:c'],'');
+ if(view.getChildren().length!==1 || view.getChildren(view.getChildren()[0])[0].role!=='Revisor') throw Error('hierarquia');
+ if(!view.getTreeItem(view.getChildren(view.getChildren()[0])[0]).description.includes('nova')) throw Error('notificação');
+ const text=conversationText(parent,[parent,child]);
+ if(!text.includes('Olá') || !text.includes('Tokens registrados') || !text.includes('Conteúdo protegido') || text.includes(secret)) throw Error('texto ou proteção');
+ await view.open('codex:c'); if(selected!=='codex:c' || !view.provideTextDocumentContent({query:'codex:c'}).includes('Resposta')) throw Error('abertura');
+ child.events.push({type:'PLANNER_RESPONSE',content:'Mensagem nova'}); view.update([parent,child],[],'');
+ if(view.documentEmitter.calls.length!==1 || !view.provideTextDocumentContent({query:'codex:c'}).includes('Mensagem nova')) throw Error('atualização');
+ view.close({scheme:'agent-monitor',query:'codex:c'}); if(view.openUris.size) throw Error('fechamento');
+})().catch(e=>{console.error(e);process.exit(1)});
+"""
+    result = subprocess.run(["node", "-e", script, str(root / "native-view.js")], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr

@@ -27,6 +27,12 @@ Como alternativa, execute `code --install-extension caminho/do/arquivo.vsix` em 
 
 Também é possível abrir o painel pela paleta de comandos: **Antigravity Monitor: Abrir visualizador**.
 
+### Modo nativo (alternativa ao chat)
+
+No ícone **Monitor de agentes**, abra **Conversas (modo nativo)** ou execute **Monitor de Agentes: Abrir visualização nativa** na paleta de comandos. Selecione uma conversa para abri-la em um documento somente para leitura; expanda os agentes para ver seus subagentes. O texto e os tokens disponíveis são atualizados junto com os registros, e conversas novas são marcadas na lista. O botão de atualização força uma nova leitura.
+
+Esse modo usa a lista e o editor nativos do VS Code, sem depender da webview do chat. Mostra texto simples (a sintaxe Markdown pode permanecer visível) e não apresenta os detalhes técnicos originais. Ele não corrige erros de webview em outras extensões. O monitor não reinicia o VS Code automaticamente.
+
 ## Configuração
 
 No VS Code, procure estas opções nas configurações:

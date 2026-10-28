@@ -5,11 +5,13 @@ const { collectSessions } = require('./sessions');
 const { CodexReader } = require('./codex-sessions');
 const { Notifications } = require('./notifications');
 const { collectClaude, collectGrok } = require('./other-sessions');
+const { NativeView } = require('./native-view');
 
 class Monitor {
   constructor(context) {
     this.context = context; this.view = null; this.timer = null; this.running = false;
     this.codex = new CodexReader(); this.notifications = new Notifications();
+    this.native = new NativeView(id => { this.notifications.read(id); this.updateStatus(); this.refresh(); });
     this.statusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 50);
     this.statusItem.command = 'antigravityMonitor.open';
     this.statusItem.tooltip = 'Abrir novas conversas no Monitor de agentes';
@@ -66,6 +68,7 @@ class Monitor {
       }
       sessions.sort((a, b) => b.modified - a.modified);
       this.updateStatus();
+      this.native.update(sessions, this.notifications.list(), warnings.join(' · '));
       this.view?.webview.postMessage({ type: 'sessions', sessions, unread: this.notifications.list(), warning: warnings.join(' · ') });
     } catch (error) { this.view?.webview.postMessage({ type: 'error', message: error.message }); }
     finally { this.running = false; }
@@ -75,6 +78,13 @@ class Monitor {
 function activate(context) {
   const monitor = new Monitor(context);
   context.subscriptions.push(vscode.window.registerWebviewViewProvider('antigravityMonitor.view', monitor));
+  context.subscriptions.push(vscode.window.registerTreeDataProvider('antigravityMonitor.native', monitor.native));
+  context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider('agent-monitor', monitor.native));
+  context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(doc => monitor.native.close(doc.uri)));
+  context.subscriptions.push(vscode.commands.registerCommand('antigravityMonitor.openNativeConversation', id => monitor.native.open(id)));
+  context.subscriptions.push(vscode.commands.registerCommand('antigravityMonitor.openNative', () => vscode.commands.executeCommand('antigravityMonitor.native.focus')));
+  context.subscriptions.push(vscode.commands.registerCommand('antigravityMonitor.refreshNative', () => monitor.refresh()));
+  context.subscriptions.push(monitor.native);
   context.subscriptions.push(vscode.commands.registerCommand('antigravityMonitor.open', () => vscode.commands.executeCommand('antigravityMonitor.view.focus')));
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration('antigravityMonitor')) { monitor.start(); monitor.refresh(); } }));
   context.subscriptions.push({ dispose: () => monitor.stop() });
