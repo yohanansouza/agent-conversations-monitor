@@ -1,0 +1,50 @@
+body{padding:12px;color:var(--vscode-foreground);font-family:var(--vscode-font-family);font-size:var(--vscode-font-size)}
+header{display:flex;align-items:center;justify-content:space-between;font-size:1.1em}
+button{cursor:pointer;color:inherit;background:transparent;border:0}
+#refresh{font-size:20px}
+input,select{box-sizing:border-box;width:100%;padding:7px;margin-bottom:5px;color:var(--vscode-input-foreground);background:var(--vscode-input-background);border:1px solid var(--vscode-input-border,transparent)}
+.hint,#status,.id,.empty{color:var(--vscode-descriptionForeground);font-size:.9em}
+#status{margin:10px 0}
+#new-conversations:not(:empty){padding:10px;margin:10px 0;border:1px solid var(--vscode-focusBorder);border-radius:6px;background:var(--vscode-editor-inactiveSelectionBackground)}
+#new-conversations strong{display:block;margin-bottom:5px}
+.notice{display:block;width:100%;padding:6px;text-align:left;color:var(--vscode-textLink-foreground);overflow-wrap:anywhere}
+.notice:hover{text-decoration:underline}
+.list{border-bottom:1px solid var(--vscode-panel-border);max-height:30vh;overflow:auto;padding-bottom:8px}
+.session{display:block;text-align:left;padding:7px;width:calc(100% - 2px);border-radius:3px}
+.session:hover{background:var(--vscode-list-hoverBackground)}
+.session.selected{background:var(--vscode-list-activeSelectionBackground);color:var(--vscode-list-activeSelectionForeground)}
+.session span,.session small{display:block;overflow:hidden;text-overflow:ellipsis}
+.session small{opacity:.75;margin-top:3px}
+.session .badge{display:inline-block;vertical-align:middle}
+.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:.8em;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.badge.codex{background:#164e42;color:#c6fff0}
+.badge.antigravity{background:#50356c;color:#f0deff}
+.detail-heading{display:flex;gap:8px;align-items:center;margin-top:14px}
+.detail-heading h2{margin:0}
+.detail h2{font-size:1.05em;margin:14px 0 4px;overflow-wrap:anywhere}
+.id{overflow-wrap:anywhere}
+.event{box-sizing:border-box;max-width:88%;width:fit-content;min-width:45%;margin:12px 0;padding:10px 12px;border-radius:12px;background:var(--vscode-editor-inactiveSelectionBackground);border:1px solid var(--vscode-panel-border);overflow-wrap:anywhere}
+.event.incoming{margin-left:auto;border-bottom-right-radius:3px}
+.event.outgoing{margin-right:auto;background:var(--vscode-textBlockQuote-background);border-bottom-left-radius:3px}
+.detail.codex .event.outgoing{border-color:#3aa788}
+.detail.antigravity .event.outgoing{border-color:#a87bdd}
+.event > strong{display:block;font-size:.93em}
+.event > small{display:block;color:var(--vscode-descriptionForeground);font-size:.8em;margin-top:3px}
+.message-content{margin-top:9px;line-height:1.5;overflow-wrap:anywhere;user-select:text}
+.message-content > :first-child{margin-top:0}
+.message-content > :last-child{margin-bottom:0}
+.message-content p{margin:8px 0}
+.message-content ul,.message-content ol{padding-left:1.5em;margin:8px 0}
+.message-content li{margin:3px 0}
+.message-content h1,.message-content h2,.message-content h3,.message-content h4,.message-content h5,.message-content h6{font-size:1.05em;margin:14px 0 6px}
+.message-content code{font-family:var(--vscode-editor-font-family,monospace);font-size:.92em;background:var(--vscode-textCodeBlock-background);padding:2px 4px;border-radius:3px}
+.message-content pre{overflow:auto;white-space:pre;margin:8px 0;padding:10px;background:var(--vscode-textCodeBlock-background);border-radius:4px}
+.message-content pre code{padding:0;background:transparent}
+.message-content a{color:var(--vscode-textLink-foreground)}
+.message-content blockquote{margin:8px 0;padding:2px 10px;border-left:3px solid var(--vscode-textBlockQuote-border);color:var(--vscode-descriptionForeground)}
+.table-wrap{overflow-x:auto;margin:8px 0}
+.message-content table{border-collapse:collapse;width:100%}
+.message-content th,.message-content td{border:1px solid var(--vscode-panel-border);padding:5px 8px;text-align:left}
+.raw-details{margin-top:10px;color:var(--vscode-descriptionForeground);font-size:.9em}
+.raw-details summary{cursor:pointer;color:var(--vscode-textLink-foreground)}
+.raw-details pre{font-family:var(--vscode-editor-font-family,monospace);font-size:.9em;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text}
