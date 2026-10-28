@@ -1,5 +1,7 @@
 const vscode = acquireVsCodeApi();
 const app = document.getElementById('app');
+const listContainer = document.getElementById('list-container');
+const chatContainer = document.getElementById('chat-container');
 const status = document.getElementById('status');
 const search = document.getElementById('search');
 const source = document.getElementById('source');
@@ -10,6 +12,17 @@ let query = '';
 let fingerprint = '';
 let unread = [];
 let listHeight = Number.isFinite(vscode.getState()?.listHeight) ? vscode.getState().listHeight : null;
+const sectionIds = ['filters-panel', 'conversations-panel', 'chat-panel'];
+for (const id of sectionIds) {
+  const section = document.getElementById(id);
+  const stored = vscode.getState()?.sections?.[id];
+  if (typeof stored === 'boolean') section.open = stored;
+  section.addEventListener('toggle', () => {
+    const state = vscode.getState() || {};
+    if (state.sections?.[id] === section.open) return;
+    vscode.setState({ ...state, sections: { ...(state.sections || {}), [id]: section.open } });
+  });
+}
 function applyListHeight(height, persist = true) {
   listHeight = Math.max(70, Math.min(Math.max(70, window.innerHeight - 120), height));
   const list = app.querySelector('.list');
@@ -45,8 +58,8 @@ function render() {
       notificationArea.append(notice);
     }
   }
-  app.replaceChildren();
-  if (!sessions.length) { app.append(el('p', 'Nenhuma conversa encontrada.', 'empty')); return; }
+  listContainer.replaceChildren(); chatContainer.replaceChildren();
+  if (!sessions.length) { listContainer.append(el('p', 'Nenhuma conversa encontrada.', 'empty')); return; }
   const list = el('section', '', 'list');
   const map = new Map(sessions.map(s => [s.id, s]));
   function addSession(s, label, depth, visited) {
@@ -69,7 +82,7 @@ function render() {
     for (const c of s.children) { const child = map.get(c.id); if (child) addSession(child, c.role, depth + 1, visited); }
   }
   for (const s of roots) addSession(s, '', 0, new Set());
-  app.append(list);
+  listContainer.append(list);
   if (listHeight !== null) applyListHeight(listHeight, false);
   const splitter = el('div', '', 'list-splitter');
   splitter.setAttribute('role', 'separator');
@@ -90,7 +103,7 @@ function render() {
     event.preventDefault();
     applyListHeight(list.getBoundingClientRect().height + (event.key === 'ArrowDown' ? 20 : -20));
   });
-  app.append(splitter);
+  listContainer.append(splitter);
   const current = map.get(selected);
   if (!current) return;
   const detail = el('section', '', `detail ${sourceClass(current.source)}`);
@@ -154,7 +167,7 @@ function render() {
     }
   }
   if (!count) detail.append(el('p', 'Ainda não há mensagens exibíveis neste registro.', 'empty'));
-  app.append(detail);
+  chatContainer.append(detail);
   list.scrollTop = listScroll;
   window.scrollTo(0, pageScroll);
 }

@@ -19,6 +19,7 @@ Como alternativa, execute `code --install-extension caminho/do/arquivo.vsix` em 
 
 ## Uso
 
+- Na visualização **Conversas**, clique nos títulos **Filtros**, **Conversas encontradas** e **Chat** para recolher ou reabrir cada seção. A escolha é preservada entre atualizações. A visualização separada **Conversas (modo nativo)** pode ser recolhida ou ocultada pelo menu de visualizações do VS Code.
 - Filtre conversas por origem e escolha o agente ou subagente para ler suas mensagens.
 - Pedidos e mensagens recebidas aparecem à direita; respostas e mensagens enviadas pelo agente selecionado, à esquerda. Cada origem tem sua cor e etiqueta.
 - Quando os dados estão disponíveis, o painel exibe tokens registrados por agente, incluindo entrada, saída e cache conforme a origem. Não é uma fatura, estimativa de custo ou medição garantida de consumo total; cache e raciocínio podem ter regras diferentes entre fontes. Não some valores de agentes sem verificar se as métricas se sobrepõem.

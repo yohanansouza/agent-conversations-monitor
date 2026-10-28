@@ -19,6 +19,7 @@ Alternatively, run `code --install-extension path/to/file.vsix`. Updates from Gi
 
 ## Features
 
+- In the **Conversas** view, expand or collapse **Filtros**, **Conversas encontradas** and **Chat** independently; their state is retained across updates. The separate **Conversas (modo nativo)** view can be collapsed or hidden using VS Code's view menu.
 - Filter sessions by provider, browse agent and subagent relationships, and read messages with Markdown formatting.
 - New conversations produce clickable notices in the panel and status bar. New messages within an existing session do not trigger notices.
 - Where records contain usage data, show per-agent input, output, cache and total tokens. These are recorded values, not a bill or guaranteed account-wide total; cache and reasoning conventions differ by provider. Agent totals may overlap.

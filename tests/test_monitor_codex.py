@@ -272,8 +272,9 @@ def test_divisor_mantem_altura_apos_atualizacao():
     root = Path(__file__).resolve().parents[1]
     script = r"""
 const vm=require('vm'),fs=require('fs');let saved=null;const listeners={};
-class Element {constructor(tag){this.tag=tag;this.children=[];this.events={};this.style={};this.value='';this.scrollTop=0;this.attrs={};} append(...xs){this.children.push(...xs)} replaceChildren(){this.children=[]} addEventListener(n,f){this.events[n]=f} setAttribute(k,v){this.attrs[k]=v} getBoundingClientRect(){return {height:parseFloat(this.style.height)||150}} querySelector(selector){return this.children.find(x=>selector==='.'+x.className)||null}}
-const nodes={};for(const id of ['app','status','search','source','new-conversations','refresh'])nodes[id]=new Element('div');
+class Element {constructor(tag){this.tag=tag;this.children=[];this.events={};this.style={};this.value='';this.scrollTop=0;this.attrs={};this.open=true;} append(...xs){this.children.push(...xs)} replaceChildren(){this.children=[]} addEventListener(n,f){this.events[n]=f} setAttribute(k,v){this.attrs[k]=v} getBoundingClientRect(){return {height:parseFloat(this.style.height)||150}} querySelector(selector){for(const child of this.children){if(selector==='.'+child.className)return child;const result=child.querySelector?.(selector);if(result)return result;}return null}}
+const nodes={};for(const id of ['app','status','search','source','new-conversations','refresh','list-container','chat-container','filters-panel','conversations-panel','chat-panel'])nodes[id]=new Element('div');
+nodes.app.append(nodes['list-container'],nodes['chat-container']);
 const doc={getElementById:id=>nodes[id],createElement:tag=>new Element(tag),createTextNode:text=>({textContent:text})};
 const api={getState:()=>saved,setState:x=>{saved=x},postMessage:()=>{}};
 const win={innerHeight:800,scrollY:0,scrollTo:()=>{},addEventListener:(n,f)=>listeners[n]=f,removeEventListener:(n,f)=>{if(listeners[n]===f)delete listeners[n]}};
@@ -287,6 +288,12 @@ if(saved.listHeight!==250 || nodes.app.querySelector('.list').style.height!=='25
 data.sessions[0].modified++;listeners.message({data});if(nodes.app.querySelector('.list').style.height!=='250px')throw Error('altura perdida ao atualizar');
 splitter=nodes.app.querySelector('.list-splitter');splitter.events.keydown({key:'ArrowUp',preventDefault(){}});
 if(saved.listHeight!==230)throw Error('ajuste pelo teclado falhou');
+nodes['filters-panel'].open=false;nodes['filters-panel'].events.toggle();
+nodes['chat-panel'].open=false;nodes['chat-panel'].events.toggle();
+data.sessions[0].modified++;listeners.message({data});
+if(saved.sections['filters-panel']!==false || saved.sections['chat-panel']!==false || nodes['filters-panel'].open || nodes['chat-panel'].open || saved.listHeight!==230)throw Error('estado das seções não preservado');
+nodes['chat-panel'].open=true;nodes['chat-panel'].events.toggle();
+if(!saved.sections['chat-panel'] || saved.sections['filters-panel']!==false)throw Error('seção não reabriu de forma independente');
 """
     result = subprocess.run(["node", "-e", script, str(root / "media" / "view.js"), str(root / "media" / "format.js")], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
