@@ -143,7 +143,7 @@ function render() {
   for (const event of current.events) {
     const items = [];
     if ((event.content || event.hasProtectedContent) && event.type !== 'GENERIC') {
-      const kind = event.type === 'USER_INPUT' ? 'Pedido' : event.type === 'CODEX_AGENT_MESSAGE' ? `Mensagem: ${resolveRecipient(event.author || 'agente')} → ${resolveRecipient(event.recipient || 'agente')}` : event.type === 'SYSTEM_MESSAGE' ? 'Mensagem entre agentes / sistema' : 'Resposta';
+      const kind = event.type === 'CODEX_AGENT_MESSAGE' ? `Mensagem: ${resolveRecipient(event.author || 'agente')} → ${resolveRecipient(event.recipient || 'agente')}` : event.type === 'SYSTEM_MESSAGE' ? 'Mensagem entre agentes / sistema' : '';
       const outgoing = event.type === 'CODEX_AGENT_MESSAGE' ? event.author === current.agentPath : !['USER_INPUT', 'SYSTEM_MESSAGE'].includes(event.type);
       const formatted = event.type === 'SYSTEM_MESSAGE' ? monitorFormat.formatSystemMessage(event.content, resolveRecipient) : event.type === 'CODEX_AGENT_MESSAGE' ? monitorFormat.formatAgentMessage(event.content, event.hasProtectedContent, resolveRecipient, event.raw) : null;
       items.push([kind, formatted ? formatted.text : clean(event.content), outgoing ? 'outgoing' : 'incoming', formatted?.raw]);
@@ -166,7 +166,9 @@ function render() {
       if (!content) continue;
       const card = el('article', '', `event ${direction}`);
       const date = event.created_at ? new Date(event.created_at).toLocaleString('pt-BR') : '';
-      card.append(el('strong', kind), el('small', date), monitorMarkdown.render(content, document, marked));
+      if (kind) card.append(el('strong', kind));
+      if (date) card.append(el('small', date));
+      card.append(monitorMarkdown.render(content, document, marked));
       if (raw !== undefined) {
         const details = el('details', '', 'raw-details');
         details.append(el('summary', 'Detalhes técnicos'), el('pre', typeof raw === 'string' ? raw : JSON.stringify(raw, null, 2)));

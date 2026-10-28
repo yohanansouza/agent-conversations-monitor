@@ -32,12 +32,14 @@ function conversationText(session, sessions) {
   };
   const add = (kind, content, date) => {
     if (!content) return;
-    const stamp = date && !Number.isNaN(new Date(date).getTime()) ? ` · ${new Date(date).toLocaleString('pt-BR')}` : '';
-    lines.push('', '────────────────────────────────────────', `${kind}${stamp}`, '', content);
+    const stamp = date && !Number.isNaN(new Date(date).getTime()) ? new Date(date).toLocaleString('pt-BR') : '';
+    lines.push('', '────────────────────────────────────────');
+    if (kind || stamp) lines.push([kind, stamp].filter(Boolean).join(' · '));
+    lines.push('', content);
   };
   for (const event of session.events || []) {
     if ((event.content || event.hasProtectedContent) && event.type !== 'GENERIC') {
-      const kind = event.type === 'USER_INPUT' ? 'Pedido' : event.type === 'CODEX_AGENT_MESSAGE' ? 'Mensagem entre agentes' : event.type === 'SYSTEM_MESSAGE' ? 'Mensagem entre agentes / sistema' : 'Resposta';
+      const kind = event.type === 'CODEX_AGENT_MESSAGE' ? 'Mensagem entre agentes' : event.type === 'SYSTEM_MESSAGE' ? 'Mensagem entre agentes / sistema' : '';
       const formatted = event.type === 'SYSTEM_MESSAGE' ? format.formatSystemMessage(event.content, resolve) : event.type === 'CODEX_AGENT_MESSAGE' ? format.formatAgentMessage(event.content, event.hasProtectedContent, resolve, event.raw) : null;
       add(kind, formatted ? formatted.text : clean(event.content), event.created_at);
     }
