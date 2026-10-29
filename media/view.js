@@ -13,6 +13,7 @@ let selected = '';
 let query = '';
 let fingerprint = '';
 let unread = [];
+let conversationInfoOpen = vscode.getState()?.conversationInfoOpen !== false;
 let expanded = new Set(Array.isArray(vscode.getState()?.expandedIds) ? vscode.getState().expandedIds : []);
 let listHeight = Number.isFinite(vscode.getState()?.listHeight) ? vscode.getState().listHeight : null;
 const sectionIds = ['filters-panel', 'conversations-panel', 'chat-panel'];
@@ -116,20 +117,29 @@ function render() {
   const current = map.get(selected);
   if (!current) return;
   const detail = el('section', '', `detail ${sourceClass(current.source)}`);
+  const info = el('details', '', 'conversation-info');
+  info.open = conversationInfoOpen;
+  info.append(el('summary', 'Informações da conversa'));
+  info.addEventListener('toggle', () => {
+    if (chatContainer.querySelector('.conversation-info') !== info || info.open === conversationInfoOpen) return;
+    conversationInfoOpen = info.open;
+    vscode.setState({ ...(vscode.getState() || {}), conversationInfoOpen });
+  });
   const heading = el('div', '', 'detail-heading');
   heading.append(badge(current.source), el('h2', parent.get(current.id)?.role || title(current)));
-  detail.append(heading, el('p', `ID: ${current.id.replace(/^codex:/, '')}`, 'id'));
-  detail.append(el('p', `Modelos e esforços registrados: ${monitorFormat.modelLabels(current.models).join(' | ')}`, 'id'));
+  info.append(heading, el('p', `ID: ${current.id.replace(/^codex:/, '')}`, 'id'));
+  info.append(el('p', `Modelos e esforços registrados: ${monitorFormat.modelLabels(current.models).join(' | ')}`, 'id'));
   if (current.usage) {
     const u = current.usage; const fmt = n => Number.isFinite(n) ? n.toLocaleString('pt-BR') : 'indisponível';
     const parts = [`Total: ${fmt(u.total)}`, `Entrada: ${fmt(u.input)}`, `Saída: ${fmt(u.output)}`];
     if (Number.isFinite(u.cacheRead)) parts.push(`Leitura em cache: ${fmt(u.cacheRead)}`);
     else if (current.source === 'Antigravity') parts.push('Leitura em cache: indisponível');
     if (Number.isFinite(u.cacheWrite)) parts.push(`Criação de cache: ${fmt(u.cacheWrite)}`);
-    const box = el('div', '', 'usage'); box.append(el('strong', 'Tokens registrados'), el('p', parts.join(' · ')), el('small', u.label)); detail.append(box);
-  } else detail.append(el('p', 'Tokens: indisponível nos registros deste agente.', 'hint'));
+    const box = el('div', '', 'usage'); box.append(el('strong', 'Tokens registrados'), el('p', parts.join(' · ')), el('small', u.label)); info.append(box);
+  } else info.append(el('p', 'Tokens: indisponível nos registros deste agente.', 'hint'));
+  if (parent.has(current.id)) info.append(el('p', `Agente principal: ${parent.get(current.id).id}`, 'id'));
+  detail.append(info);
   if (current.truncated) detail.append(el('p', 'Exibindo os 2.000 eventos mais recentes desta sessão.', 'hint'));
-  if (parent.has(current.id)) detail.append(el('p', `Agente principal: ${parent.get(current.id).id}`, 'id'));
   function resolveRecipient(value) {
     const normalized = String(value).replace(/^codex:/, '');
     const parentId = parent.get(current.id)?.id;

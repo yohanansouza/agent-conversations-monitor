@@ -2,7 +2,7 @@
   "name": "antigravity-conversations-monitor",
   "displayName": "Monitor de Agentes",
   "description": "Visualiza registros locais de agentes Codex, Antigravity CLI, Claude Code e Grok Build.",
-  "version": "0.14.1",
+  "version": "0.14.2",
   "publisher": "bottrade-local",
   "engines": { "vscode": "^1.90.0" },
   "categories": ["Other"],

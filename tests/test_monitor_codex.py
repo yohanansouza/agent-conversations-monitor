@@ -294,6 +294,13 @@ data.sessions[0].modified++;listeners.message({data});
 if(saved.sections['filters-panel']!==false || saved.sections['chat-panel']!==false || nodes['filters-panel'].open || nodes['chat-panel'].open || saved.listHeight!==230)throw Error('estado das seções não preservado');
 nodes['chat-panel'].open=true;nodes['chat-panel'].events.toggle();
 if(!saved.sections['chat-panel'] || saved.sections['filters-panel']!==false)throw Error('seção não reabriu de forma independente');
+let info=nodes['chat-container'].querySelector('.conversation-info');
+if(!info || !info.open)throw Error('informações não iniciaram abertas');
+info.open=false;info.events.toggle();
+data.sessions[0].modified++;listeners.message({data});
+info=nodes['chat-container'].querySelector('.conversation-info');
+if(info.open || saved.conversationInfoOpen!==false || saved.listHeight!==230)throw Error('informações não permaneceram recolhidas');
+info.open=true;info.events.toggle();if(!saved.conversationInfoOpen)throw Error('informações não reabriram');
 """
     result = subprocess.run(["node", "-e", script, str(root / "media" / "view.js"), str(root / "media" / "format.js"), str(root / "media" / "tree.js")], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr

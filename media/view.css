@@ -40,6 +40,9 @@ input,select{box-sizing:border-box;width:100%;padding:7px;margin-bottom:5px;colo
 .badge.claude{background:#70452d;color:#fff0dc}
 .badge.grok{background:#31526c;color:#e2f5ff}
 .detail-heading{display:flex;gap:8px;align-items:center;margin-top:4px}
+.conversation-info>summary{cursor:pointer;font-weight:600;padding:6px 0;color:var(--vscode-descriptionForeground)}
+.conversation-info>summary:hover{color:var(--vscode-textLink-foreground)}
+.conversation-info>summary:focus-visible{outline:1px solid var(--vscode-focusBorder)}
 .detail-heading h2{margin:0}
 .detail h2{font-size:1.05em;margin:14px 0 4px;overflow-wrap:anywhere}
 .id{overflow-wrap:anywhere}
